@@ -38,6 +38,60 @@ export type Database = {
           },
         ]
       }
+      feedbacks: {
+        Row: {
+          content: string
+          created_at: string
+          done: boolean
+          grain_id: string
+          guest_id: string | null
+          id: string
+          screenshot_url: string | null
+          timecode: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          done?: boolean
+          grain_id: string
+          guest_id?: string | null
+          id?: string
+          screenshot_url?: string | null
+          timecode?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          done?: boolean
+          grain_id?: string
+          guest_id?: string | null
+          id?: string
+          screenshot_url?: string | null
+          timecode?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedbacks_grain_id_fkey"
+            columns: ["grain_id"]
+            isOneToOne: false
+            referencedRelation: "grains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedbacks_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grains: {
         Row: {
           created_at: string

@@ -1,9 +1,8 @@
 
-import { Check, ExternalLink, FileText, Video } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Eye, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface Grain {
   id: string;
@@ -11,7 +10,6 @@ interface Grain {
   type: 'web' | 'video';
   url: string;
   done: boolean;
-  project_id: string;
 }
 
 interface GrainsListProps {
@@ -23,77 +21,60 @@ interface GrainsListProps {
 export function GrainsList({ grains, onStatusToggle, isUserLoggedIn }: GrainsListProps) {
   if (grains.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Aucun élément à tester pour ce projet.</p>
+      <div className="text-center py-6">
+        <p className="text-gray-500">Aucun élément à tester pour le moment</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12"></TableHead>
-            <TableHead>Titre</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Lien</TableHead>
-            <TableHead>Statut</TableHead>
-            {isUserLoggedIn && <TableHead className="w-24">Action</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {grains.map((grain) => (
-            <TableRow key={grain.id}>
-              <TableCell>
-                {grain.type === 'web' ? (
-                  <FileText className="h-5 w-5 text-blue-500" />
-                ) : (
-                  <Video className="h-5 w-5 text-red-500" />
-                )}
-              </TableCell>
-              <TableCell className="font-medium">{grain.title}</TableCell>
-              <TableCell>
-                {grain.type === 'web' ? 'Site web' : 'Vidéo'}
-              </TableCell>
-              <TableCell>
-                <a 
-                  href={grain.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center text-blue-600 hover:text-blue-800"
-                >
-                  Ouvrir <ExternalLink className="h-4 w-4 ml-1" />
-                </a>
-              </TableCell>
-              <TableCell>
-                <Badge variant={grain.done ? "success" : "outline"}>
-                  {grain.done ? "Terminé" : "À tester"}
+    <div className="space-y-4">
+      {grains.map((grain) => (
+        <div 
+          key={grain.id} 
+          className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow"
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-medium">{grain.title}</h3>
+                <Badge variant={grain.type === 'web' ? "default" : "secondary"}>
+                  {grain.type === 'web' ? 'Site' : 'Vidéo'}
                 </Badge>
-              </TableCell>
+                {grain.done && (
+                  <Badge variant="success">Terminé</Badge>
+                )}
+              </div>
+              <a 
+                href={grain.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-sm text-blue-500 hover:underline"
+              >
+                {grain.url}
+              </a>
+            </div>
+            <div className="flex gap-2">
+              <Link to={`/grain/${grain.id}`}>
+                <Button size="sm" variant="outline">
+                  <Eye className="h-4 w-4 mr-1" />
+                  Tester
+                </Button>
+              </Link>
               {isUserLoggedIn && (
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onStatusToggle(grain.id, !grain.done)}
-                    className={cn(
-                      "text-gray-700 hover:text-gray-900",
-                      grain.done && "text-green-600 hover:text-green-700"
-                    )}
-                  >
-                    <Check className={cn(
-                      "h-5 w-5 mr-1",
-                      grain.done ? "opacity-100" : "opacity-30"
-                    )} />
-                    {grain.done ? "Terminé" : "Marquer"}
-                  </Button>
-                </TableCell>
+                <Button 
+                  size="sm" 
+                  variant={grain.done ? "outline" : "default"}
+                  onClick={() => onStatusToggle(grain.id, grain.done)}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  {grain.done ? "Rouvrir" : "Terminer"}
+                </Button>
               )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

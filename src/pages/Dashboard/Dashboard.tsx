@@ -1,103 +1,74 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { NavBar } from "@/components/NavBar";
-import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Project } from "./types";
+import { NavBar } from "@/components/NavBar";
 import { ProjectsList } from "./components/ProjectsList";
-import { useProjects } from "./hooks/useProjects";
-import { NewProjectDialog } from "./components/NewProjectDialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
-  const [clientFilter, setClientFilter] = useState("");
-  const [activeTab, setActiveTab] = useState("tous");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const { projects, loading, fetchProjects } = useProjects();
 
+  // Récupérer les projets de l'utilisateur au chargement
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
+    const fetchProjects = async () => {
+      if (!user) return;
 
-  const handleProjectCreated = () => {
-    setIsDialogOpen(false);
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('projects')
+          .select(`
+            *,
+            clients (id, nom),
+            (
+              SELECT count(*) FROM grains WHERE project_id = projects.id AND type = 'web'
+            ) as sites,
+            (
+              SELECT count(*) FROM grains WHERE project_id = projects.id AND type = 'video'
+            ) as videos
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        setProjects(data || []);
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error.message || "Impossible de charger les projets",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProjects();
-  };
+  }, [user, toast]);
 
-  const filteredProjects = projects.filter((project) => {
-    if (activeTab === "actifs" && !project.active) return false;
-    if (activeTab === "archives" && project.active) return false;
-    
-    if (clientFilter && !project.title.toLowerCase().includes(clientFilter.toLowerCase())) {
-      return false;
-    }
-    
-    return true;
-  });
-
+  // Get user name for NavBar
   const userName = user ? `${user.user_metadata.prenom} ${user.user_metadata.nom}` : "";
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <NavBar userName={userName} />
-      
-      <main className="flex-1 container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Projets</h1>
-          <Button 
-            onClick={() => setIsDialogOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            <Plus className="h-5 w-5 mr-2" /> Nouveau projet
-          </Button>
-        </div>
-        
-        <Tabs 
-          defaultValue="tous" 
-          className="mb-8"
-          onValueChange={(value) => setActiveTab(value)}
-        >
-          <TabsList className="grid w-full max-w-md grid-cols-3 mb-8">
-            <TabsTrigger value="tous">Tous</TabsTrigger>
-            <TabsTrigger value="actifs">Actifs</TabsTrigger>
-            <TabsTrigger value="archives">Archivés</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <label htmlFor="client-filter" className="font-medium text-lg">
-              Client :
-            </label>
-            <Input
-              id="client-filter"
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-              className="max-w-xs"
-              placeholder="Filtrer par client"
-            />
-          </div>
-        </div>
-        
+      <main className="container mx-auto py-8 px-4">
+        <h1 className="text-3xl font-bold mb-8">Projets</h1>
         <ProjectsList 
-          projects={filteredProjects} 
+          projects={projects} 
           loading={loading} 
+          onProjectCreated={(newProject) => {
+            setProjects(prev => [newProject, ...prev]);
+          }}
         />
       </main>
-
-      <NewProjectDialog 
-        isOpen={isDialogOpen} 
-        onOpenChange={setIsDialogOpen}
-        onProjectCreated={handleProjectCreated}
-      />
     </div>
   );
 }
