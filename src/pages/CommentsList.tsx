@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,15 +102,14 @@ export default function CommentsList() {
     if (!projectId) return;
 
     try {
+      // Use project_id directly instead of grain.project_id
       let query = supabase
         .from("feedbacks")
         .select(`
           *,
-          guest:guest_id(nom, prenom),
-          user:user_id(nom, prenom),
           grain:grain_id(title)
         `)
-        .eq("grain.project_id", projectId);
+        .eq("project_id", projectId);
 
       if (selectedGrainId) {
         query = query.eq("grain_id", selectedGrainId);
@@ -126,17 +126,44 @@ export default function CommentsList() {
       if (error) throw error;
       
       if (data) {
+        // Create a separate function to get user and guest data when needed
         const processedFeedbacks: Feedback[] = data.map(item => {
-          const feedback: Feedback = {
+          return {
             ...item,
-            user: typeof item.user === 'object' && item.user !== null && 
-                  !('error' in (item.user as object)) ? item.user as UserData : null,
-            guest: typeof item.guest === 'object' && item.guest !== null && 
-                   !('error' in (item.guest as object)) ? item.guest as UserData : null,
+            user: null, // We'll handle user data separately if needed
+            guest: null, // We'll handle guest data separately if needed
             grain: typeof item.grain === 'object' && item.grain !== null ? item.grain : null
           };
-          return feedback;
         });
+        
+        // For feedbacks with user_id or guest_id, fetch their information separately
+        for (let i = 0; i < processedFeedbacks.length; i++) {
+          const feedback = processedFeedbacks[i];
+          
+          if (feedback.user_id) {
+            const { data: userData } = await supabase
+              .from("users")
+              .select("nom, prenom")
+              .eq("id", feedback.user_id)
+              .single();
+            
+            if (userData) {
+              processedFeedbacks[i].user = userData as UserData;
+            }
+          }
+          
+          if (feedback.guest_id) {
+            const { data: guestData } = await supabase
+              .from("guests")
+              .select("nom, prenom")
+              .eq("id", feedback.guest_id)
+              .single();
+            
+            if (guestData) {
+              processedFeedbacks[i].guest = guestData as UserData;
+            }
+          }
+        }
         
         setFeedbacks(processedFeedbacks);
       }
@@ -213,9 +240,9 @@ export default function CommentsList() {
       <main className="container mx-auto py-8 px-4">
         <div className="mb-6">
           <Button variant="ghost" size="sm" asChild className="mb-4">
-            <Link to={`/project/${projectId}`}>
+            <Link to="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour au projet
+              Retour au dashboard
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">{projectTitle}</h1>
