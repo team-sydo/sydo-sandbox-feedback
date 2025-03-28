@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,7 +55,6 @@ export default function CommentsList() {
   const [selectedGrainId, setSelectedGrainId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "done" | "pending">("all");
 
-  // Récupérer les informations du projet, les grains et les feedbacks
   useEffect(() => {
     const fetchProjectData = async () => {
       if (!projectId) return;
@@ -64,7 +62,6 @@ export default function CommentsList() {
       try {
         setLoading(true);
 
-        // Récupérer le titre du projet
         const { data: projectData, error: projectError } = await supabase
           .from("projects")
           .select("title")
@@ -74,7 +71,6 @@ export default function CommentsList() {
         if (projectError) throw projectError;
         if (projectData) setProjectTitle(projectData.title);
 
-        // Récupérer les grains du projet
         const { data: grainsData, error: grainsError } = await supabase
           .from("grains")
           .select("id, title")
@@ -84,7 +80,6 @@ export default function CommentsList() {
         if (grainsError) throw grainsError;
         if (grainsData) setGrains(grainsData);
 
-        // Récupérer tous les feedbacks
         await fetchFeedbacks();
 
       } catch (error: any) {
@@ -102,7 +97,6 @@ export default function CommentsList() {
     fetchProjectData();
   }, [projectId, toast]);
 
-  // Fonction pour récupérer les feedbacks avec filtres
   const fetchFeedbacks = async () => {
     if (!projectId) return;
 
@@ -117,12 +111,10 @@ export default function CommentsList() {
         `)
         .eq("grain.project_id", projectId);
 
-      // Appliquer le filtre par grain si sélectionné
       if (selectedGrainId) {
         query = query.eq("grain_id", selectedGrainId);
       }
 
-      // Appliquer le filtre par statut
       if (statusFilter === "done") {
         query = query.eq("done", true);
       } else if (statusFilter === "pending") {
@@ -134,13 +126,13 @@ export default function CommentsList() {
       if (error) throw error;
       
       if (data) {
-        // Process the data to ensure it conforms to the Feedback interface
         const processedFeedbacks: Feedback[] = data.map(item => {
-          // Check if user and guest properties are valid objects or errors
           const feedback: Feedback = {
             ...item,
-            user: typeof item.user === 'object' && item.user !== null && !('error' in item.user) ? item.user : null,
-            guest: typeof item.guest === 'object' && item.guest !== null && !('error' in item.guest) ? item.guest : null,
+            user: typeof item.user === 'object' && item.user !== null && 
+                  !('error' in (item.user as object)) ? item.user as UserData : null,
+            guest: typeof item.guest === 'object' && item.guest !== null && 
+                   !('error' in (item.guest as object)) ? item.guest as UserData : null,
             grain: typeof item.grain === 'object' && item.grain !== null ? item.grain : null
           };
           return feedback;
@@ -158,12 +150,10 @@ export default function CommentsList() {
     }
   };
 
-  // Mettre à jour les feedbacks lorsque les filtres changent
   useEffect(() => {
     fetchFeedbacks();
   }, [selectedGrainId, statusFilter, projectId]);
 
-  // Fonction pour basculer le statut d'un feedback
   const toggleFeedbackStatus = async (feedbackId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -173,7 +163,6 @@ export default function CommentsList() {
 
       if (error) throw error;
 
-      // Mettre à jour l'état local
       setFeedbacks(feedbacks.map(feedback => 
         feedback.id === feedbackId 
           ? { ...feedback, done: !currentStatus } 
@@ -195,7 +184,6 @@ export default function CommentsList() {
     }
   };
 
-  // Formater le timecode (secondes -> MM:SS)
   const formatTimecode = (seconds: number | null) => {
     if (seconds === null) return "";
     const minutes = Math.floor(seconds / 60);
@@ -203,7 +191,6 @@ export default function CommentsList() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Obtenir le nom du commentateur
   const getCommenterName = (feedback: Feedback) => {
     if (feedback.user && feedback.user.prenom && feedback.user.nom) {
       return `${feedback.user.prenom} ${feedback.user.nom} (User)`;
@@ -213,7 +200,6 @@ export default function CommentsList() {
     return "Anonyme";
   };
 
-  // Obtenir le nom du grain
   const getGrainTitle = (feedback: Feedback) => {
     return feedback.grain?.title || "Inconnu";
   };
