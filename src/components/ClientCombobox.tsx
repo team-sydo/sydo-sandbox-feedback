@@ -76,6 +76,16 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
     setOpen(false);
   };
 
+  // Ensure we have a default input value when a default client is selected
+  useEffect(() => {
+    if (defaultValue && clients.length > 0) {
+      const client = clients.find(c => c.id === defaultValue);
+      if (client) {
+        setInputValue(client.nom);
+      }
+    }
+  }, [defaultValue, clients]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -89,8 +99,8 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
+      <PopoverContent className="w-full p-0" align="start" sideOffset={4}>
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder="Rechercher un client..." 
             value={inputValue}
@@ -102,31 +112,33 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
               }
             }}
           />
-          {loading ? (
-            <CommandEmpty>Chargement des clients...</CommandEmpty>
-          ) : (
-            <>
-              <CommandEmpty>
-                Aucun client trouvé. Appuyez sur Entrée pour créer "{inputValue}"
-              </CommandEmpty>
-              <CommandGroup>
-                {clients.map((client) => (
-                  <CommandItem
-                    key={client.id}
-                    value={client.id}
-                    onSelect={handleSelect}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === client.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {client.nom}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </>
+          <CommandEmpty>
+            {loading ? (
+              "Chargement des clients..."
+            ) : (
+              `Aucun client trouvé. Appuyez sur Entrée pour créer "${inputValue || ''}"`
+            )}
+          </CommandEmpty>
+          {!loading && clients.length > 0 && (
+            <CommandGroup>
+              {clients.filter(client => 
+                !inputValue || client.nom.toLowerCase().includes(inputValue.toLowerCase())
+              ).map((client) => (
+                <CommandItem
+                  key={client.id}
+                  value={client.id}
+                  onSelect={handleSelect}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === client.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {client.nom}
+                </CommandItem>
+              ))}
+            </CommandGroup>
           )}
         </Command>
       </PopoverContent>
