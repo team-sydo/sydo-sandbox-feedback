@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -71,7 +70,6 @@ export default function Dashboard() {
 
       if (error) throw error;
       
-      // Transform data to include client name and add dummy data for sites and videos count
       const projectsWithCounts = data.map(project => ({
         ...project,
         client_name: project.clients ? project.clients.nom : null,
@@ -127,7 +125,6 @@ export default function Dashboard() {
     try {
       let clientId = newProject.client_id;
 
-      // Si aucun client existant n'a été sélectionné mais qu'un nom de client a été saisi
       if (!clientId && newProject.client_name) {
         clientId = await createClient(newProject.client_name);
       }
@@ -153,7 +150,6 @@ export default function Dashboard() {
       setIsDialogOpen(false);
       setNewProject({ title: "", description: "", client_id: null, client_name: "" });
       
-      // Refresh projects list to include the new project
       fetchProjects();
     } catch (error: any) {
       toast({
@@ -172,13 +168,10 @@ export default function Dashboard() {
     }));
   };
 
-  // Filtrage des projets en fonction de l'onglet actif et du filtre client
   const filteredProjects = projects.filter((project) => {
-    // Filtre par statut
     if (activeTab === "actifs" && !project.active) return false;
     if (activeTab === "archives" && project.active) return false;
     
-    // Filtre par titre (client)
     if (clientFilter && !project.title.toLowerCase().includes(clientFilter.toLowerCase())) {
       return false;
     }
@@ -186,7 +179,6 @@ export default function Dashboard() {
     return true;
   });
 
-  // Get user name for NavBar
   const userName = user ? `${user.user_metadata.prenom} ${user.user_metadata.nom}` : "";
 
   return (
@@ -241,6 +233,7 @@ export default function Dashboard() {
               filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
+                  id={project.id}
                   title={project.title}
                   client={project.client_name || project.description || ""}
                   sites={project.sites || 0}
@@ -257,7 +250,6 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Dialog for creating a new project */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>

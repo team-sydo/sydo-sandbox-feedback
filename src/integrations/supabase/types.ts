@@ -38,6 +38,88 @@ export type Database = {
           },
         ]
       }
+      grains: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          project_id: string
+          title: string
+          type: Database["public"]["Enums"]["grain_type"]
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          project_id: string
+          title: string
+          type: Database["public"]["Enums"]["grain_type"]
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          project_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["grain_type"]
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grains_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guests: {
+        Row: {
+          created_at: string
+          device: Database["public"]["Enums"]["device_type"]
+          id: string
+          navigateur: Database["public"]["Enums"]["browser_type"]
+          nom: string
+          poste: string | null
+          prenom: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          device: Database["public"]["Enums"]["device_type"]
+          id?: string
+          navigateur: Database["public"]["Enums"]["browser_type"]
+          nom: string
+          poste?: string | null
+          prenom: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          device?: Database["public"]["Enums"]["device_type"]
+          id?: string
+          navigateur?: Database["public"]["Enums"]["browser_type"]
+          nom?: string
+          poste?: string | null
+          prenom?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           active: boolean
@@ -122,7 +204,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      browser_type: "chrome" | "edge" | "firefox" | "safari" | "autre"
+      device_type: "mobile" | "ordinateur" | "tablette"
+      grain_type: "web" | "video"
     }
     CompositeTypes: {
       [_ in never]: never
