@@ -33,7 +33,7 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
   const [inputValue, setInputValue] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [selectedClientName, setSelectedClientName] = useState("");
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -49,7 +49,6 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
         }
 
         setClients(data || []);
-        setFilteredClients(data || []);
       } catch (error) {
         console.error("Erreur lors du chargement des clients:", error);
       } finally {
@@ -60,47 +59,45 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
     fetchClients();
   }, []);
 
-  // Update filtered clients when input changes
+  // Set initial selected client name when default value exists
   useEffect(() => {
-    if (clients && clients.length > 0) {
-      if (!inputValue) {
-        setFilteredClients(clients);
-      } else {
-        const filtered = clients.filter(client => 
-          client.nom.toLowerCase().includes(inputValue.toLowerCase())
-        );
-        setFilteredClients(filtered);
+    if (defaultValue && clients.length > 0) {
+      const client = clients.find(c => c.id === defaultValue);
+      if (client) {
+        setSelectedClientName(client.nom);
+        setInputValue(client.nom);
       }
     }
-  }, [inputValue, clients]);
+  }, [defaultValue, clients]);
+
+  // Function to safely get filtered clients
+  const getFilteredClients = () => {
+    if (!clients || clients.length === 0) return [];
+    
+    if (!inputValue) return clients;
+    
+    return clients.filter(client => 
+      client.nom.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  };
 
   const handleSelect = (currentValue: string) => {
-    // Si la valeur sélectionnée est un ID existant
     const selectedClient = clients.find(client => client.id === currentValue);
     
     if (selectedClient) {
       setValue(currentValue);
       setInputValue(selectedClient.nom);
+      setSelectedClientName(selectedClient.nom);
       onClientSelect(selectedClient.id, selectedClient.nom);
     } else {
-      // Cas où l'utilisateur a entré un nouveau nom de client
       setValue("");
       setInputValue(currentValue);
+      setSelectedClientName(currentValue);
       onClientSelect(null, currentValue);
     }
     
     setOpen(false);
   };
-
-  // Ensure we have a default input value when a default client is selected
-  useEffect(() => {
-    if (defaultValue && clients.length > 0) {
-      const client = clients.find(c => c.id === defaultValue);
-      if (client) {
-        setInputValue(client.nom);
-      }
-    }
-  }, [defaultValue, clients]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -111,18 +108,17 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {inputValue || "Sélectionner un client..."}
+          {selectedClientName || inputValue || "Sélectionner un client..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start" sideOffset={4}>
-        <Command shouldFilter={false}>
+      <PopoverContent className="w-full p-0" align="start">
+        <Command>
           <CommandInput 
             placeholder="Rechercher un client..." 
             value={inputValue}
             onValueChange={(value) => {
               setInputValue(value);
-              // Si la valeur saisie ne correspond à aucun client existant
               if (value && !clients.some(client => client.nom.toLowerCase() === value.toLowerCase())) {
                 onClientSelect(null, value);
               }
@@ -135,25 +131,23 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
               `Aucun client trouvé. Appuyez sur Entrée pour créer "${inputValue || ''}"`
             )}
           </CommandEmpty>
-          {!loading && filteredClients && filteredClients.length > 0 && (
-            <CommandGroup>
-              {filteredClients.map((client) => (
-                <CommandItem
-                  key={client.id}
-                  value={client.id}
-                  onSelect={handleSelect}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === client.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {client.nom}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+          <CommandGroup>
+            {getFilteredClients().map((client) => (
+              <CommandItem
+                key={client.id}
+                value={client.id}
+                onSelect={handleSelect}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === client.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {client.nom}
+              </CommandItem>
+            ))}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>
