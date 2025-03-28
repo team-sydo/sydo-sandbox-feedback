@@ -1,5 +1,5 @@
 
-import { Eye, CheckCircle } from "lucide-react";
+import { Eye, CheckCircle, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,9 +49,10 @@ export function GrainsList({ grains, onStatusToggle, isUserLoggedIn }: GrainsLis
                 href={grain.url} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-sm text-blue-500 hover:underline"
+                className="text-sm text-blue-500 hover:underline inline-flex items-center gap-1"
               >
-                {grain.url}
+                <ExternalLink className="h-3.5 w-3.5" />
+                Ouvrir le lien
               </a>
             </div>
             <div className="flex gap-2">
