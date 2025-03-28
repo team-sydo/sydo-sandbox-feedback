@@ -33,6 +33,7 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
   const [inputValue, setInputValue] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -48,6 +49,7 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
         }
 
         setClients(data || []);
+        setFilteredClients(data || []);
       } catch (error) {
         console.error("Erreur lors du chargement des clients:", error);
       } finally {
@@ -57,6 +59,20 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
 
     fetchClients();
   }, []);
+
+  // Update filtered clients when input changes
+  useEffect(() => {
+    if (clients && clients.length > 0) {
+      if (!inputValue) {
+        setFilteredClients(clients);
+      } else {
+        const filtered = clients.filter(client => 
+          client.nom.toLowerCase().includes(inputValue.toLowerCase())
+        );
+        setFilteredClients(filtered);
+      }
+    }
+  }, [inputValue, clients]);
 
   const handleSelect = (currentValue: string) => {
     // Si la valeur sélectionnée est un ID existant
@@ -119,11 +135,9 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
               `Aucun client trouvé. Appuyez sur Entrée pour créer "${inputValue || ''}"`
             )}
           </CommandEmpty>
-          {!loading && clients.length > 0 && (
+          {!loading && filteredClients && filteredClients.length > 0 && (
             <CommandGroup>
-              {clients.filter(client => 
-                !inputValue || client.nom.toLowerCase().includes(inputValue.toLowerCase())
-              ).map((client) => (
+              {filteredClients.map((client) => (
                 <CommandItem
                   key={client.id}
                   value={client.id}
