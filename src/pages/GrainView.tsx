@@ -4,12 +4,28 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { NavBar } from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Check, Camera, Video, Play, Pause, Send, X } from "lucide-react";
-import html2canvas from "html2canvas";
+import { 
+  ArrowLeft, 
+  X, 
+  Image, 
+  Video, 
+  Play, 
+  Pause, 
+  Send, 
+  Check,
+  ExternalLink,
+  Menu
+} from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose
+} from "@/components/ui/drawer";
 
 // Types pour les données
 interface Grain {
@@ -46,15 +62,16 @@ export default function GrainView() {
   const [grain, setGrain] = useState<Grain | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [newFeedback, setNewFeedback] = useState("");
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   
@@ -82,16 +99,19 @@ export default function GrainView() {
         
         setGrain(grainData);
         
-        // Récupérer les feedbacks du grain
-        const { data: feedbacksData, error: feedbacksError } = await supabase
-          .from('feedbacks')
-          .select('*')
-          .eq('grain_id', grainId)
-          .order('created_at', { ascending: false });
-        
-        if (feedbacksError) throw feedbacksError;
-        
-        setFeedbacks(feedbacksData || []);
+        // Récupérer les feedbacks du grain pour l'utilisateur actuel
+        if (user) {
+          const { data: feedbacksData, error: feedbacksError } = await supabase
+            .from('feedbacks')
+            .select('*')
+            .eq('grain_id', grainId)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          
+          if (feedbacksError) throw feedbacksError;
+          
+          setFeedbacks(feedbacksData || []);
+        }
         
       } catch (error: any) {
         toast({
@@ -105,7 +125,7 @@ export default function GrainView() {
     };
     
     fetchGrainDetails();
-  }, [grainId, toast]);
+  }, [grainId, user, toast]);
 
   // Gérer la lecture/pause de la vidéo
   const togglePlayPause = () => {
@@ -126,50 +146,49 @@ export default function GrainView() {
     setCurrentTime(Math.floor(videoRef.current.currentTime));
   };
   
-  // Prendre une capture d'écran
-  const takeScreenshot = async () => {
-    try {
-      setIsCapturing(true);
-      
-      let captureElement;
-      
-      if (grain?.type === 'web' && iframeRef.current) {
-        // Capturer l'iframe pour les sites web
-        captureElement = iframeRef.current;
-      } else if (grain?.type === 'video' && videoRef.current) {
-        // Capturer la vidéo
-        captureElement = videoRef.current;
-      } else {
-        throw new Error("Élément non trouvé pour la capture d'écran");
+  // Gérer la sélection de fichier
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    
+    if (file) {
+      // Vérifier que c'est une image
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Format invalide",
+          description: "Veuillez sélectionner un fichier image",
+          variant: "destructive",
+        });
+        return;
       }
       
-      const canvas = await html2canvas(captureElement);
-      const dataUrl = canvas.toDataURL('image/png');
+      setScreenshotFile(file);
       
-      setScreenshot(dataUrl);
+      // Créer un aperçu
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setScreenshotPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
       toast({
-        title: "Capture d'écran prise",
-        description: "Vous pouvez maintenant ajouter votre commentaire",
+        title: "Image sélectionnée",
+        description: "Votre capture a été ajoutée",
       });
-    } catch (error: any) {
-      toast({
-        title: "Erreur de capture",
-        description: error.message || "Impossible de prendre une capture d'écran",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCapturing(false);
     }
   };
   
   // Annuler la capture d'écran
   const cancelScreenshot = () => {
-    setScreenshot(null);
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
   // Soumettre un feedback
   const submitFeedback = async () => {
-    if (!grain || !newFeedback.trim()) return;
+    if (!grain || !newFeedback.trim() || !user) return;
     
     try {
       setSubmitting(true);
@@ -179,21 +198,17 @@ export default function GrainView() {
       
       // Uploader la capture d'écran si elle existe
       let screenshotUrl = null;
-      if (screenshot) {
-        // Convertir la base64 en blob
-        const res = await fetch(screenshot);
-        const blob = await res.blob();
-        
+      if (screenshotFile) {
         // Générer un nom de fichier unique
-        const fileExt = 'png';
+        const fileExt = screenshotFile.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `screenshots/${fileName}`;
+        const filePath = `${fileName}`;
         
         // Uploader la capture d'écran
         const { error: uploadError, data } = await supabase.storage
           .from('feedback-screenshots')
-          .upload(filePath, blob, {
-            contentType: 'image/png',
+          .upload(filePath, screenshotFile, {
+            contentType: screenshotFile.type,
           });
         
         if (uploadError) throw uploadError;
@@ -211,10 +226,11 @@ export default function GrainView() {
         .from('feedbacks')
         .insert({
           grain_id: grain.id,
+          project_id: grain.project_id,
           content: newFeedback,
           timecode,
           screenshot_url: screenshotUrl,
-          user_id: user?.id,
+          user_id: user.id,
           done: false
         })
         .select()
@@ -226,7 +242,11 @@ export default function GrainView() {
       if (data) {
         setFeedbacks(prev => [data, ...prev]);
         setNewFeedback("");
-        setScreenshot(null);
+        setScreenshotFile(null);
+        setScreenshotPreview(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         
         toast({
           title: "Feedback ajouté",
@@ -324,7 +344,7 @@ export default function GrainView() {
               variant="outline" 
               onClick={() => navigate('/dashboard')}
             >
-              <ArrowLeft className="h-4 w-4 mr-2" /> Retour aux projets
+              <ArrowLeft className="h-4 w-4 mr-2" /> Retour au dashboard
             </Button>
           </div>
         </main>
@@ -333,46 +353,180 @@ export default function GrainView() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col overflow-hidden">
+    <div className="min-h-screen flex flex-col">
       <NavBar userName={userName} />
       
-      <div className="flex-grow flex">
-        {/* Zone principale */}
-        <div className={`flex-1 flex flex-col h-full overflow-hidden ${sidebarOpen ? 'pl-0 md:pl-64' : 'pl-0'}`}>
-          {/* En-tête avec navigation */}
+      <div className="flex flex-1">
+        {/* Sidebar pour les feedbacks (visible sur mobile uniquement quand ouverte) */}
+        <Drawer open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <DrawerContent className="h-[85vh] max-h-[85vh] rounded-t-xl">
+            <DrawerHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <DrawerTitle>Mes commentaires</DrawerTitle>
+                <DrawerClose>
+                  <Button variant="ghost" size="icon">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DrawerClose>
+              </div>
+            </DrawerHeader>
+            <div className="overflow-auto p-4 h-full">
+              {feedbacks.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">Aucun commentaire pour le moment</p>
+              ) : (
+                <div className="space-y-4">
+                  {feedbacks.map(feedback => (
+                    <div 
+                      key={feedback.id} 
+                      className={`p-4 rounded-lg border ${feedback.done ? 'bg-gray-50' : 'bg-white'}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm text-gray-500">{formatDate(feedback.created_at)}</span>
+                        <Button
+                          size="sm"
+                          variant={feedback.done ? "outline" : "default"}
+                          onClick={() => toggleFeedbackStatus(feedback.id, feedback.done)}
+                        >
+                          {feedback.done ? "Rouvrir" : <Check className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {feedback.timecode !== null && (
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <Video className="h-4 w-4 mr-1" />
+                          <span>Timecode: {formatTimecode(feedback.timecode)}</span>
+                        </div>
+                      )}
+                      <p className="text-gray-700">{feedback.content}</p>
+                      {feedback.screenshot_url && (
+                        <div className="mt-2">
+                          <img 
+                            src={feedback.screenshot_url} 
+                            alt="Capture d'écran" 
+                            className="rounded-md border max-h-48 w-auto"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+        
+        {/* Barre latérale (visible uniquement sur desktop) */}
+        <div className={`hidden md:flex flex-col w-64 border-r bg-white transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="p-4 border-b flex items-center justify-between">
+            <h2 className="font-semibold">Mes commentaires</h2>
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="overflow-auto p-4 flex-1">
+            {feedbacks.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">Aucun commentaire pour le moment</p>
+            ) : (
+              <div className="space-y-4">
+                {feedbacks.map(feedback => (
+                  <div 
+                    key={feedback.id} 
+                    className={`p-4 rounded-lg border ${feedback.done ? 'bg-gray-50' : 'bg-white'}`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm text-gray-500">{formatDate(feedback.created_at)}</span>
+                      <Button
+                        size="sm"
+                        variant={feedback.done ? "outline" : "default"}
+                        onClick={() => toggleFeedbackStatus(feedback.id, feedback.done)}
+                      >
+                        {feedback.done ? "Rouvrir" : <Check className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    {feedback.timecode !== null && (
+                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                        <Video className="h-4 w-4 mr-1" />
+                        <span>Timecode: {formatTimecode(feedback.timecode)}</span>
+                      </div>
+                    )}
+                    <p className="text-gray-700">{feedback.content}</p>
+                    {feedback.screenshot_url && (
+                      <div className="mt-2">
+                        <img 
+                          src={feedback.screenshot_url} 
+                          alt="Capture d'écran" 
+                          className="rounded-md border max-h-48 w-auto"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Contenu principal */}
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
+          {/* En-tête */}
           <div className="bg-white shadow p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/dashboard">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Retour au dashboard
+                </Link>
               </Button>
-              <div className="ml-4">
+              <div className="mx-4">
                 <h1 className="text-lg font-semibold">{grain.title}</h1>
-                <p className="text-sm text-gray-500">{grain.project?.title}</p>
+                <p className="text-sm text-gray-500">{grain.project?.title || 'Projet'}</p>
               </div>
             </div>
             <div className="flex gap-2">
               <Button 
-                size="sm" 
                 variant="outline" 
-                onClick={takeScreenshot}
-                disabled={isCapturing}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Capture
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
+                size="sm" 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden"
               >
-                {sidebarOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                <Menu className="h-4 w-4 mr-2" />
+                Commentaires
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="hidden md:flex"
+              >
+                {sidebarOpen ? (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Fermer
+                  </>
+                ) : (
+                  <>
+                    <Menu className="h-4 w-4 mr-2" />
+                    Commentaires
+                  </>
+                )}
+              </Button>
+              {grain.url && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  asChild
+                  className="hidden md:flex"
+                >
+                  <a href={grain.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ouvrir dans un nouvel onglet
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
           
-          {/* Contenu principal (iframe ou vidéo) */}
-          <div className="flex-1 bg-gray-100 overflow-hidden">
+          {/* Contenu (iframe ou vidéo) */}
+          <div className="flex-1 bg-gray-100">
             {grain.type === 'web' ? (
               <iframe 
                 ref={iframeRef}
@@ -407,99 +561,93 @@ export default function GrainView() {
               </div>
             )}
           </div>
-        </div>
-        
-        {/* Barre latérale (feedbacks) */}
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-full sm:max-w-sm md:max-w-md border-r">
-            <div className="h-full flex flex-col">
-              <SheetHeader className="border-b p-4">
-                <SheetTitle className="flex items-center">
-                  <span>Feedbacks</span>
-                  <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setSidebarOpen(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </SheetTitle>
-              </SheetHeader>
-              <div className="overflow-y-auto flex-1 p-4">
-                {feedbacks.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">Aucun feedback pour le moment</p>
-                ) : (
-                  <div className="space-y-4">
-                    {feedbacks.map(feedback => (
-                      <div 
-                        key={feedback.id} 
-                        className={`p-4 rounded-lg border ${feedback.done ? 'bg-gray-50' : 'bg-white'}`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm text-gray-500">{formatDate(feedback.created_at)}</span>
-                          <Button
-                            size="sm"
-                            variant={feedback.done ? "outline" : "default"}
-                            onClick={() => toggleFeedbackStatus(feedback.id, feedback.done)}
-                          >
-                            {feedback.done ? "Rouvrir" : <Check className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        {feedback.timecode !== null && (
-                          <div className="flex items-center text-sm text-gray-500 mb-2">
-                            <Video className="h-4 w-4 mr-1" />
-                            <span>Timecode: {formatTimecode(feedback.timecode)}</span>
-                          </div>
-                        )}
-                        <p className="text-gray-700">{feedback.content}</p>
-                        {feedback.screenshot_url && (
-                          <div className="mt-2">
-                            <img 
-                              src={feedback.screenshot_url} 
-                              alt="Capture d'écran" 
-                              className="rounded-md border max-h-48 w-auto"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="border-t p-4">
-                {screenshot && (
-                  <div className="mb-4 relative">
+          
+          {/* Zone de saisie de commentaire */}
+          <div className="bg-white border-t p-4">
+            <div className="container mx-auto max-w-4xl">
+              <div className="mb-4">
+                {screenshotPreview && (
+                  <div className="relative inline-block mb-2">
                     <img 
-                      src={screenshot} 
+                      src={screenshotPreview} 
                       alt="Aperçu" 
-                      className="rounded-md border max-h-48 w-auto"
+                      className="h-24 rounded border"
                     />
-                    <Button 
-                      size="sm" 
-                      variant="destructive" 
-                      className="absolute top-2 right-2"
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                       onClick={cancelScreenshot}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </Button>
                   </div>
                 )}
-                <div className="flex items-end gap-2">
+              </div>
+              
+              <div className="flex gap-2">
+                <div className="hidden md:block">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    id="screenshot-input"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={submitting}
+                  >
+                    <Image className="h-4 w-4 mr-2" />
+                    Capture
+                  </Button>
+                </div>
+                
+                <div className="flex-1">
                   <Textarea
                     placeholder="Ajouter un commentaire..."
                     value={newFeedback}
                     onChange={(e) => setNewFeedback(e.target.value)}
-                    className="flex-1 resize-none"
-                    rows={3}
+                    className="min-h-[80px] resize-none"
                   />
+                </div>
+                
+                <div className="flex flex-col gap-2">
                   <Button
-                    size="sm"
+                    variant="default"
                     disabled={!newFeedback.trim() || submitting}
                     onClick={submitFeedback}
+                    className="h-full"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">Envoyer</span>
                   </Button>
+                  
+                  <div className="md:hidden">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      id="screenshot-input-mobile"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={submitting}
+                    >
+                      <Image className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </SheetContent>
-        </Sheet>
+          </div>
+        </div>
       </div>
     </div>
   );
