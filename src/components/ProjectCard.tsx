@@ -44,7 +44,7 @@ export function ProjectCard({ id, title, client, sites, videos, status }: Projec
           size="sm" 
           asChild
         >
-          <Link to={`/projects/${id}`}>
+          <Link to={`/project/${id}`}>
             Voir le projet
           </Link>
         </Button>
