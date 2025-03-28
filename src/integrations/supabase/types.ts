@@ -46,6 +46,7 @@ export type Database = {
           grain_id: string
           guest_id: string | null
           id: string
+          project_id: string | null
           screenshot_url: string | null
           timecode: number | null
           updated_at: string
@@ -58,6 +59,7 @@ export type Database = {
           grain_id: string
           guest_id?: string | null
           id?: string
+          project_id?: string | null
           screenshot_url?: string | null
           timecode?: number | null
           updated_at?: string
@@ -70,6 +72,7 @@ export type Database = {
           grain_id?: string
           guest_id?: string | null
           id?: string
+          project_id?: string | null
           screenshot_url?: string | null
           timecode?: number | null
           updated_at?: string
@@ -88,6 +91,13 @@ export type Database = {
             columns: ["guest_id"]
             isOneToOne: false
             referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedbacks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]

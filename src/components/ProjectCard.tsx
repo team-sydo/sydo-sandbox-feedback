@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Video, MessageSquare } from "lucide-react";
+import { FileText, Video, MessageSquare, ExternalLink } from "lucide-react";
 
 interface ProjectCardProps {
   id: string;
@@ -55,6 +55,7 @@ export function ProjectCard({ id, title, client, sites, videos, status }: Projec
           asChild
         >
           <Link to={`/project/${id}`}>
+            <ExternalLink className="h-4 w-4 mr-1" />
             Voir le projet
           </Link>
         </Button>

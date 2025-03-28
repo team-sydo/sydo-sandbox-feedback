@@ -18,6 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface UserData {
+  nom: string;
+  prenom: string;
+}
+
 interface Feedback {
   id: string;
   content: string;
@@ -28,17 +33,11 @@ interface Feedback {
   screenshot_url: string | null;
   timecode: number | null;
   user_id: string | null;
-  guest?: {
-    nom: string;
-    prenom: string;
-  };
-  user?: {
-    nom: string;
-    prenom: string;
-  };
+  guest?: UserData | null;
+  user?: UserData | null;
   grain?: {
     title: string;
-  };
+  } | null;
 }
 
 interface Grain {
@@ -133,8 +132,22 @@ export default function CommentsList() {
       const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
-      if (data) setFeedbacks(data);
-
+      
+      if (data) {
+        // Process the data to ensure it conforms to the Feedback interface
+        const processedFeedbacks: Feedback[] = data.map(item => {
+          // Check if user and guest properties are valid objects or errors
+          const feedback: Feedback = {
+            ...item,
+            user: typeof item.user === 'object' && item.user !== null && !('error' in item.user) ? item.user : null,
+            guest: typeof item.guest === 'object' && item.guest !== null && !('error' in item.guest) ? item.guest : null,
+            grain: typeof item.grain === 'object' && item.grain !== null ? item.grain : null
+          };
+          return feedback;
+        });
+        
+        setFeedbacks(processedFeedbacks);
+      }
     } catch (error: any) {
       console.error("Erreur lors du chargement des feedbacks:", error);
       toast({
