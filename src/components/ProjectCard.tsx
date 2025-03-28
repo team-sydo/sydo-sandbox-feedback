@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Video } from "lucide-react";
+import { FileText, Video, MessageSquare } from "lucide-react";
 
 interface ProjectCardProps {
   id: string;
@@ -38,7 +38,17 @@ export function ProjectCard({ id, title, client, sites, videos, status }: Projec
           </div>
         </div>
       </CardContent>
-      <CardFooter className="bg-gray-50 justify-end">
+      <CardFooter className="bg-gray-50 justify-end gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          asChild
+        >
+          <Link to={`/project/${id}/comments`}>
+            <MessageSquare className="h-4 w-4 mr-1" />
+            Voir les retours
+          </Link>
+        </Button>
         <Button 
           variant="outline" 
           size="sm" 
