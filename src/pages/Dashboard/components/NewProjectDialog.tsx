@@ -125,7 +125,7 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
               onChange={setSelectedClient}
               placeholder="Sélectionner un client"
               emptyMessage="Aucun client trouvé"
-              items={[]} // Ensure items is never undefined
+              items={[]} 
             />
           </div>
           
