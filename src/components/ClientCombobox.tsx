@@ -32,9 +32,11 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
   const [value, setValue] = useState(defaultValue || "");
   const [inputValue, setInputValue] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClientName, setSelectedClientName] = useState("");
 
+  // Fetch clients on component mount
   useEffect(() => {
     const fetchClients = async () => {
       try {
@@ -48,7 +50,10 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
           throw error;
         }
 
-        setClients(data || []);
+        // Ensure data is an array even if the response is empty
+        const clientData = data || [];
+        setClients(clientData);
+        setFilteredClients(clientData);
       } catch (error) {
         console.error("Erreur lors du chargement des clients:", error);
       } finally {
@@ -70,18 +75,27 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
     }
   }, [defaultValue, clients]);
 
-  // Function to safely get filtered clients
-  const getFilteredClients = () => {
-    if (!clients || clients.length === 0) return [];
+  // Update filtered clients whenever input value changes
+  useEffect(() => {
+    if (!clients || clients.length === 0) {
+      setFilteredClients([]);
+      return;
+    }
     
-    if (!inputValue) return clients;
+    if (!inputValue) {
+      setFilteredClients(clients);
+      return;
+    }
     
-    return clients.filter(client => 
+    const filtered = clients.filter(client => 
       client.nom.toLowerCase().includes(inputValue.toLowerCase())
     );
-  };
+    
+    setFilteredClients(filtered);
+  }, [inputValue, clients]);
 
   const handleSelect = (currentValue: string) => {
+    // Handle the case when a client is selected
     const selectedClient = clients.find(client => client.id === currentValue);
     
     if (selectedClient) {
@@ -90,6 +104,7 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
       setSelectedClientName(selectedClient.nom);
       onClientSelect(selectedClient.id, selectedClient.nom);
     } else {
+      // Handle the case when a new client name is entered
       setValue("");
       setInputValue(currentValue);
       setSelectedClientName(currentValue);
@@ -124,30 +139,32 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
               }
             }}
           />
-          <CommandEmpty>
-            {loading ? (
-              "Chargement des clients..."
-            ) : (
-              `Aucun client trouvé. Appuyez sur Entrée pour créer "${inputValue || ''}"`
-            )}
-          </CommandEmpty>
-          <CommandGroup>
-            {getFilteredClients().map((client) => (
-              <CommandItem
-                key={client.id}
-                value={client.id}
-                onSelect={handleSelect}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === client.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {client.nom}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          {loading ? (
+            <CommandEmpty>Chargement des clients...</CommandEmpty>
+          ) : (
+            <>
+              <CommandEmpty>
+                {inputValue ? `Aucun client trouvé. Appuyez sur Entrée pour créer "${inputValue}"` : "Aucun client trouvé"}
+              </CommandEmpty>
+              <CommandGroup>
+                {filteredClients && filteredClients.map((client) => (
+                  <CommandItem
+                    key={client.id}
+                    value={client.id}
+                    onSelect={handleSelect}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === client.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {client.nom}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
