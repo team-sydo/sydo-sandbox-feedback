@@ -1,53 +1,44 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SydoLogo } from "@/components/SydoLogo";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulation de connexion réussie
-    if (email && password) {
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur Sydo Reviews",
-      });
-      navigate("/dashboard");
-    } else {
-      toast({
-        title: "Erreur de connexion",
-        description: "Veuillez vérifier vos informations",
-        variant: "destructive",
-      });
+    if (!email || !password) return;
+    
+    setIsLoading(true);
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulation d'inscription réussie
-    if (email && password && firstName && lastName) {
-      toast({
-        title: "Inscription réussie",
-        description: "Votre compte a été créé avec succès",
-      });
-      navigate("/dashboard");
-    } else {
-      toast({
-        title: "Erreur d'inscription",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
-      });
+    if (!email || !password || !firstName || !lastName) return;
+    
+    setIsLoading(true);
+    try {
+      await signUp(email, password, firstName, lastName);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,6 +67,7 @@ export default function Auth() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -90,11 +82,16 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600">
-                Se connecter
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-500 hover:bg-blue-600"
+                disabled={isLoading}
+              >
+                {isLoading ? "Chargement..." : "Se connecter"}
               </Button>
             </form>
           </TabsContent>
@@ -112,6 +109,7 @@ export default function Auth() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 
@@ -125,6 +123,7 @@ export default function Auth() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -140,6 +139,7 @@ export default function Auth() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -154,11 +154,16 @@ export default function Auth() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
-              <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600">
-                S'inscrire
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-500 hover:bg-blue-600"
+                disabled={isLoading}
+              >
+                {isLoading ? "Chargement..." : "S'inscrire"}
               </Button>
             </form>
           </TabsContent>
