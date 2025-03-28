@@ -89,7 +89,7 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-full p-0" align="start">
         <Command>
           <CommandInput 
             placeholder="Rechercher un client..." 
@@ -97,7 +97,7 @@ export function ClientCombobox({ onClientSelect, defaultValue }: ClientComboboxP
             onValueChange={(value) => {
               setInputValue(value);
               // Si la valeur saisie ne correspond à aucun client existant
-              if (!clients.some(client => client.nom.toLowerCase() === value.toLowerCase())) {
+              if (value && !clients.some(client => client.nom.toLowerCase() === value.toLowerCase())) {
                 onClientSelect(null, value);
               }
             }}
