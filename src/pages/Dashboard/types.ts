@@ -9,6 +9,8 @@ export interface Project {
   client_name?: string | null;
   sites?: number;
   videos?: number;
+  user_id?: string;
+  created_by?: string;
   clients?: {
     id: string;
     nom: string;

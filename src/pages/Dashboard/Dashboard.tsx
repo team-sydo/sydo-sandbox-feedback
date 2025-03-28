@@ -21,7 +21,7 @@ export default function Dashboard() {
       try {
         setLoading(true);
         
-        // Modifier la requête pour corriger l'erreur de syntaxe
+        // Requête pour récupérer les projets
         const { data, error } = await supabase
           .from('projects')
           .select(`
@@ -34,10 +34,9 @@ export default function Dashboard() {
         if (error) throw error;
 
         // Ajouter manuellement le comptage des sites et vidéos
-        // Cette approche est temporaire et pourrait être optimisée avec une requête plus efficace
-        let projectsWithCounts = data || [];
+        const projectsWithCounts: Project[] = [];
         
-        for (const project of projectsWithCounts) {
+        for (const project of (data || [])) {
           // Compter les grains de type 'web'
           const { count: sitesCount, error: sitesError } = await supabase
             .from('grains')
@@ -55,13 +54,15 @@ export default function Dashboard() {
           if (sitesError) console.error("Error counting sites:", sitesError);
           if (videosError) console.error("Error counting videos:", videosError);
           
-          project.sites = sitesCount || 0;
-          project.videos = videosCount || 0;
+          // Créer un nouvel objet avec toutes les propriétés typées correctement
+          const projectWithCounts: Project = {
+            ...project,
+            sites: sitesCount || 0,
+            videos: videosCount || 0,
+            client_name: project.clients ? project.clients.nom : null
+          };
           
-          // Extraire le nom du client si disponible
-          if (project.clients) {
-            project.client_name = project.clients.nom;
-          }
+          projectsWithCounts.push(projectWithCounts);
         }
         
         setProjects(projectsWithCounts);
