@@ -9,9 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      clients: {
+        Row: {
+          created_at: string | null
+          id: string
+          nom: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nom: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nom?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           active: boolean
+          client_id: string | null
           created_at: string | null
           created_by: string
           description: string | null
@@ -21,6 +51,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          client_id?: string | null
           created_at?: string | null
           created_by: string
           description?: string | null
@@ -30,6 +61,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          client_id?: string | null
           created_at?: string | null
           created_by?: string
           description?: string | null
@@ -38,6 +70,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]

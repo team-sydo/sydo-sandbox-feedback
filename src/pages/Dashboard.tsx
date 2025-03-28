@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ClientCombobox } from "@/components/ClientCombobox";
 
 interface Project {
   id: string;
@@ -20,6 +21,8 @@ interface Project {
   description: string | null;
   active: boolean;
   created_at: string;
+  client_id: string | null;
+  client_name?: string;
   sites?: number;
   videos?: number;
 }
@@ -30,7 +33,12 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newProject, setNewProject] = useState({ title: "", description: "" });
+  const [newProject, setNewProject] = useState({ 
+    title: "", 
+    description: "",
+    client_id: null as string | null,
+    client_name: ""
+  });
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -52,14 +60,21 @@ export default function Dashboard() {
       setLoading(true);
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          clients:client_id (
+            id,
+            nom
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Add dummy data for sites and videos count
+      // Transform data to include client name and add dummy data for sites and videos count
       const projectsWithCounts = data.map(project => ({
         ...project,
+        client_name: project.clients ? project.clients.nom : null,
         sites: Math.floor(Math.random() * 5) + 1,
         videos: Math.floor(Math.random() * 3)
       }));
@@ -76,6 +91,29 @@ export default function Dashboard() {
     }
   };
 
+  const createClient = async (clientName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          nom: clientName,
+          user_id: user?.id
+        })
+        .select();
+
+      if (error) throw error;
+      
+      return data[0].id;
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le client: " + error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const createProject = async () => {
     if (!newProject.title.trim()) {
       toast({
@@ -87,12 +125,20 @@ export default function Dashboard() {
     }
 
     try {
+      let clientId = newProject.client_id;
+
+      // Si aucun client existant n'a été sélectionné mais qu'un nom de client a été saisi
+      if (!clientId && newProject.client_name) {
+        clientId = await createClient(newProject.client_name);
+      }
+
       const { data, error } = await supabase
         .from('projects')
         .insert({
           title: newProject.title,
           description: newProject.description || null,
           user_id: user?.id,
+          client_id: clientId,
           created_by: user?.id
         })
         .select();
@@ -105,16 +151,10 @@ export default function Dashboard() {
       });
 
       setIsDialogOpen(false);
-      setNewProject({ title: "", description: "" });
+      setNewProject({ title: "", description: "", client_id: null, client_name: "" });
       
-      // Add the new project to the state with dummy counts
-      if (data && data[0]) {
-        setProjects(prev => [{
-          ...data[0],
-          sites: 1,
-          videos: 0
-        }, ...prev]);
-      }
+      // Refresh projects list to include the new project
+      fetchProjects();
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -122,6 +162,14 @@ export default function Dashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleClientSelect = (clientId: string | null, clientName: string) => {
+    setNewProject(prev => ({
+      ...prev,
+      client_id: clientId,
+      client_name: clientName
+    }));
   };
 
   // Filtrage des projets en fonction de l'onglet actif et du filtre client
@@ -194,7 +242,7 @@ export default function Dashboard() {
                 <ProjectCard
                   key={project.id}
                   title={project.title}
-                  client={project.description || ""}
+                  client={project.client_name || project.description || ""}
                   sites={project.sites || 0}
                   videos={project.videos || 0}
                   status={project.active ? "actif" : "archivé"}
@@ -221,6 +269,11 @@ export default function Dashboard() {
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
+              <Label htmlFor="client">Client</Label>
+              <ClientCombobox onClientSelect={handleClientSelect} />
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="project-title">Titre du projet</Label>
               <Input
                 id="project-title"
@@ -236,7 +289,7 @@ export default function Dashboard() {
                 id="project-description"
                 value={newProject.description}
                 onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Description du projet ou nom du client"
+                placeholder="Description du projet"
                 rows={3}
               />
             </div>
