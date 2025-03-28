@@ -1,14 +1,14 @@
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { ClientCombobox } from "@/components/ClientCombobox";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ClientCombobox } from "@/components/ClientCombobox";
 
 interface NewProjectDialogProps {
   isOpen: boolean;
@@ -17,40 +17,26 @@ interface NewProjectDialogProps {
 }
 
 export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: NewProjectDialogProps) {
-  const [newProject, setNewProject] = useState({ 
-    title: "", 
-    description: "",
-    client_id: null as string | null,
-    client_name: ""
-  });
-  const { toast } = useToast();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedClient, setSelectedClient] = useState<{ value: string; label: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createClient = async (clientName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .insert({
-          nom: clientName,
-          user_id: user?.id
-        })
-        .select();
-
-      if (error) throw error;
-      
-      return data[0].id;
-    } catch (error: any) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
       toast({
         title: "Erreur",
-        description: "Impossible de créer le client: " + error.message,
+        description: "Vous devez être connecté pour créer un projet",
         variant: "destructive",
       });
-      throw error;
+      return;
     }
-  };
-
-  const createProject = async () => {
-    if (!newProject.title.trim()) {
+    
+    if (!title.trim()) {
       toast({
         title: "Erreur",
         description: "Le titre du projet est requis",
@@ -58,100 +44,105 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
       });
       return;
     }
-
+    
     try {
-      let clientId = newProject.client_id;
-
-      if (!clientId && newProject.client_name) {
-        clientId = await createClient(newProject.client_name);
-      }
-
+      setIsSubmitting(true);
+      
+      // Créer le projet
       const { data, error } = await supabase
         .from('projects')
-        .insert({
-          title: newProject.title,
-          description: newProject.description || null,
-          user_id: user?.id,
-          client_id: clientId,
-          created_by: user?.id
-        })
-        .select();
-
+        .insert([
+          {
+            title,
+            description: description.trim() || null,
+            client_id: selectedClient?.value || null,
+            user_id: user.id,
+            created_by: user.id,
+            active: true,
+          },
+        ])
+        .select('id')
+        .single();
+      
       if (error) throw error;
-
+      
       toast({
         title: "Succès",
-        description: "Projet créé avec succès",
+        description: "Le projet a été créé avec succès",
       });
-
-      // Reset form
-      setNewProject({ title: "", description: "", client_id: null, client_name: "" });
       
-      // Notify parent component
+      // Réinitialiser le formulaire et fermer la modale
+      setTitle("");
+      setDescription("");
+      setSelectedClient(null);
       onProjectCreated();
+      
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: error.message || "Impossible de créer le projet",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const handleClientSelect = (clientId: string | null, clientName: string) => {
-    setNewProject(prev => ({
-      ...prev,
-      client_id: clientId,
-      client_name: clientName
-    }));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Créer un nouveau projet</DialogTitle>
-          <DialogDescription>
-            Remplissez les informations pour créer un nouveau projet.
-          </DialogDescription>
+          <DialogTitle>Nouveau projet</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="client">Client</Label>
-            <ClientCombobox onClientSelect={handleClientSelect} />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="project-title">Titre du projet</Label>
+            <Label htmlFor="title">Titre du projet *</Label>
             <Input
-              id="project-title"
-              value={newProject.title}
-              onChange={(e) => setNewProject(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Mon nouveau projet"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Titre du projet"
+              required
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="project-description">Description (facultatif)</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id="project-description"
-              value={newProject.description}
-              onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Description du projet"
               rows={3}
             />
           </div>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
-          <Button onClick={createProject} className="bg-blue-500 hover:bg-blue-600">
-            Créer
-          </Button>
-        </DialogFooter>
+          
+          <div className="space-y-2">
+            <Label>Client</Label>
+            <ClientCombobox 
+              value={selectedClient} 
+              onChange={setSelectedClient}
+              placeholder="Sélectionner un client"
+              emptyMessage="Aucun client trouvé"
+              items={[]} // Ensure items is never undefined
+            />
+          </div>
+          
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Création..." : "Créer le projet"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
