@@ -2,7 +2,7 @@
 import { ProjectCard } from "@/components/ProjectCard";
 import { Project } from "../types";
 
-interface ProjectsListProps {
+export interface ProjectsListProps {
   projects: Project[];
   loading: boolean;
 }

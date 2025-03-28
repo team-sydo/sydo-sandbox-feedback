@@ -21,24 +21,50 @@ export default function Dashboard() {
       try {
         setLoading(true);
         
+        // Modifier la requête pour corriger l'erreur de syntaxe
         const { data, error } = await supabase
           .from('projects')
           .select(`
             *,
-            clients (id, nom),
-            (
-              SELECT count(*) FROM grains WHERE project_id = projects.id AND type = 'web'
-            ) as sites,
-            (
-              SELECT count(*) FROM grains WHERE project_id = projects.id AND type = 'video'
-            ) as videos
+            clients (id, nom)
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        setProjects(data || []);
+        // Ajouter manuellement le comptage des sites et vidéos
+        // Cette approche est temporaire et pourrait être optimisée avec une requête plus efficace
+        let projectsWithCounts = data || [];
+        
+        for (const project of projectsWithCounts) {
+          // Compter les grains de type 'web'
+          const { count: sitesCount, error: sitesError } = await supabase
+            .from('grains')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', project.id)
+            .eq('type', 'web');
+            
+          // Compter les grains de type 'video'
+          const { count: videosCount, error: videosError } = await supabase
+            .from('grains')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', project.id)
+            .eq('type', 'video');
+            
+          if (sitesError) console.error("Error counting sites:", sitesError);
+          if (videosError) console.error("Error counting videos:", videosError);
+          
+          project.sites = sitesCount || 0;
+          project.videos = videosCount || 0;
+          
+          // Extraire le nom du client si disponible
+          if (project.clients) {
+            project.client_name = project.clients.nom;
+          }
+        }
+        
+        setProjects(projectsWithCounts);
       } catch (error: any) {
         toast({
           title: "Erreur",
@@ -64,9 +90,6 @@ export default function Dashboard() {
         <ProjectsList 
           projects={projects} 
           loading={loading} 
-          onProjectCreated={(newProject) => {
-            setProjects(prev => [newProject, ...prev]);
-          }}
         />
       </main>
     </div>

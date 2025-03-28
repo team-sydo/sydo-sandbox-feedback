@@ -411,7 +411,7 @@ export default function GrainView() {
         
         {/* Barre latérale (feedbacks) */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-full sm:max-w-sm md:max-w-md border-r" hideCloseIcon={true}>
+          <SheetContent side="left" className="p-0 w-full sm:max-w-sm md:max-w-md border-r">
             <div className="h-full flex flex-col">
               <SheetHeader className="border-b p-4">
                 <SheetTitle className="flex items-center">
