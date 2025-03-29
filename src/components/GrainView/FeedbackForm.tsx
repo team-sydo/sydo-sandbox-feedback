@@ -4,6 +4,7 @@ import { Image, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ImageAnnotationModal from './ImageAnnotationModal';
 
 interface FeedbackFormProps {
   grainId: string;
@@ -25,9 +26,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
@@ -47,22 +49,115 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       }
       
       setScreenshotFile(file);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshotPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      toast({
-        title: "Image sélectionnée",
-        description: "Votre capture a été ajoutée",
-      });
+      setIsAnnotationModalOpen(true);
     }
   };
   
   const handleCaptureClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Format invalide",
+          description: "Veuillez sélectionner un fichier image",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setScreenshotFile(file);
+      setIsAnnotationModalOpen(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleAnnotationSubmit = async (annotationContent: string, annotatedImageUrl: string) => {
+    if (!annotationContent.trim()) return;
+    
+    try {
+      setSubmitting(true);
+      
+      // Déterminer le timecode pour les vidéos
+      const timecode = isVideoType ? currentTime : null;
+      
+      // Convert base64 image to a file
+      const base64Response = await fetch(annotatedImageUrl);
+      const blob = await base64Response.blob();
+      const annotatedFile = new File([blob], `annotation-${Date.now()}.png`, { type: 'image/png' });
+      
+      // Uploader la capture d'écran
+      const fileExt = 'png';
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+      
+      // Uploader la capture d'écran
+      const { error: uploadError } = await supabase.storage
+        .from('feedback-screenshots')
+        .upload(filePath, annotatedFile, {
+          contentType: 'image/png',
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      // Récupérer l'URL publique
+      const { data: urlData } = supabase.storage
+        .from('feedback-screenshots')
+        .getPublicUrl(filePath);
+      
+      const screenshotUrl = urlData.publicUrl;
+      
+      // Créer le feedback dans la base de données
+      const { error } = await supabase
+        .from('feedbacks')
+        .insert({
+          grain_id: grainId,
+          project_id: projectId,
+          content: annotationContent,
+          timecode,
+          screenshot_url: screenshotUrl,
+          user_id: userId,
+          done: false
+        });
+      
+      if (error) throw error;
+      
+      // Réinitialiser le formulaire
+      setContent('');
+      setScreenshotFile(null);
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      toast({
+        title: "Commentaire envoyé",
+        description: "Votre commentaire avec annotation a été enregistré avec succès",
+      });
+      
+      // Notifier le parent que le feedback a été soumis
+      onFeedbackSubmitted();
+      
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'ajouter le commentaire",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
   
   const submitFeedback = async () => {
@@ -117,7 +212,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       // Réinitialiser le formulaire
       setContent('');
       setScreenshotFile(null);
-      setScreenshotPreview(null);
       
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -143,7 +237,12 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   };
 
   return (
-    <div className="flex items-center px-4 py-3 gap-2 border-t bg-white">
+    <div 
+      ref={dropZoneRef} 
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      className="flex items-center px-4 py-3 gap-2 border-t bg-white"
+    >
       <input
         type="text"
         placeholder="Ajouter un commentaire..."
@@ -179,6 +278,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       >
         <Send className="h-4 w-4" />
       </Button>
+      
+      <ImageAnnotationModal 
+        isOpen={isAnnotationModalOpen}
+        onClose={() => setIsAnnotationModalOpen(false)}
+        imageFile={screenshotFile}
+        onSubmit={handleAnnotationSubmit}
+        timecode={currentTime}
+      />
     </div>
   );
 };

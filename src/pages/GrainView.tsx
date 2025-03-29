@@ -208,9 +208,9 @@ export default function GrainView() {
               </Link>
             </div>
             <div className="flex justify-center items-center">
-              <h1 className="text-lg font-semibold">{grain.title}</h1>{" "}
+              <h1 className="text-lg font-semibold">{grain?.title}</h1>{" "}
               <div className="w-12"></div>
-              <p className="text-sm text-gray-500">{grain.project?.title}</p>
+              <p className="text-sm text-gray-500">{grain?.project?.title}</p>
             </div>
 
             <button
@@ -224,7 +224,7 @@ export default function GrainView() {
 
           {/* Contenu (iframe ou video) */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
-            {grain.type === "web" ? (
+            {grain?.type === "web" ? (
               <iframe
                 ref={iframeRef}
                 src={grain.url}
@@ -232,44 +232,22 @@ export default function GrainView() {
                 title={grain.title}
               />
             ) : (
-              <VideoPlayer url={grain.url} onTimeUpdate={handleTimeUpdate} />
+              <VideoPlayer url={grain?.url} onTimeUpdate={handleTimeUpdate} />
             )}
           </div>
-          {/* footer - btn navigation/titres/form */}
-          <div className=" flex overflow-hidden">
-            {/* <div className="flex-0 px-4">
-              <button
-                className="flex items-center text-gray-700 hover:text-gray-900"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                <MessageCircle className="h-4 w-4 mr-1" />
-                <span>Commentaires</span>
-              </button>
-              <Link
-                to="/dashboard"
-                className="flex items-center text-gray-700 hover:text-gray-900 mr-6"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                <span>Retour</span>
-              </Link>
-            </div>
-            <div className="flex-0 px-10">
-              <h1 className="text-lg font-semibold">{grain.title}</h1>
-              <p className="text-sm text-gray-500">{grain.project?.title}</p>
-            </div> */}
-            {/* Formulaire de feedback */}
-            <div className="flex-1">
-              {user && (
-                <FeedbackForm
-                  grainId={grain.id}
-                  projectId={grain.project_id}
-                  userId={user.id}
-                  currentTime={grain.type === "video" ? currentTime : null}
-                  isVideoType={grain.type === "video"}
-                  onFeedbackSubmitted={fetchFeedbacks}
-                />
-              )}
-            </div>
+          
+          {/* Formulaire de feedback */}
+          <div className="flex-1">
+            {user && grain && (
+              <FeedbackForm
+                grainId={grain.id}
+                projectId={grain.project_id}
+                userId={user.id}
+                currentTime={grain.type === "video" ? currentTime : null}
+                isVideoType={grain.type === "video"}
+                onFeedbackSubmitted={fetchFeedbacks}
+              />
+            )}
           </div>
         </div>
       </div>
