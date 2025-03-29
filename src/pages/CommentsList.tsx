@@ -1,298 +1,32 @@
 
-import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Filter, Check, Image } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-interface UserData {
-  nom: string;
-  prenom: string;
-}
-
-interface Author {
-  id: string;
-  name: string;
-  type: "user" | "guest";
-}
-
-interface Feedback {
-  id: string;
-  content: string;
-  created_at: string;
-  done: boolean;
-  grain_id: string;
-  guest_id: string | null;
-  screenshot_url: string | null;
-  timecode: number | null;
-  user_id: string | null;
-  guest?: UserData | null;
-  user?: UserData | null;
-  grain?: {
-    title: string;
-  } | null;
-}
-
-interface Grain {
-  id: string;
-  title: string;
-}
+import { useProjectComments } from "@/hooks/useProjectComments";
+import { CommentsFilters } from "@/components/comments/CommentsFilters";
+import { CommentsTable } from "@/components/comments/CommentsTable";
+import { formatTimecode } from "@/utils/formatting";
 
 export default function CommentsList() {
   const { projectId } = useParams();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [projectTitle, setProjectTitle] = useState("");
-  const [grains, setGrains] = useState<Grain[]>([]);
-  const [selectedGrainId, setSelectedGrainId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | "done" | "pending">(
-    "all"
-  );
-  const [authors, setAuthors] = useState<Author[]>([]);
-  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchProjectData = async () => {
-      if (!projectId) return;
-
-      try {
-        setLoading(true);
-
-        const { data: projectData, error: projectError } = await supabase
-          .from("projects")
-          .select("title")
-          .eq("id", projectId)
-          .single();
-
-        if (projectError) throw projectError;
-        if (projectData) setProjectTitle(projectData.title);
-
-        const { data: grainsData, error: grainsError } = await supabase
-          .from("grains")
-          .select("id, title")
-          .eq("project_id", projectId)
-          .order("title");
-
-        if (grainsError) throw grainsError;
-        if (grainsData) setGrains(grainsData);
-
-        await fetchFeedbacks();
-      } catch (error: any) {
-        console.error("Erreur lors du chargement des données:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les données du projet",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjectData();
-  }, [projectId, toast]);
-
-  const fetchFeedbacks = async () => {
-    if (!projectId) return;
-
-    try {
-      // Use the projectId directly to filter feedbacks
-      let query = supabase
-        .from("feedbacks")
-        .select(
-          `
-          *,
-          grain:grain_id(title)
-        `
-        )
-        .eq("project_id", projectId);
-
-      if (selectedGrainId) {
-        query = query.eq("grain_id", selectedGrainId);
-      }
-
-      if (statusFilter === "done") {
-        query = query.eq("done", true);
-      } else if (statusFilter === "pending") {
-        query = query.eq("done", false);
-      }
-
-      if (selectedAuthorId) {
-        const selectedAuthor = authors.find(author => author.id === selectedAuthorId);
-        if (selectedAuthor) {
-          if (selectedAuthor.type === "user") {
-            query = query.eq("user_id", selectedAuthorId);
-          } else {
-            query = query.eq("guest_id", selectedAuthorId);
-          }
-        }
-      }
-
-      const { data, error } = await query.order("created_at", {
-        ascending: false,
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        // Process the feedbacks
-        const processedFeedbacks: Feedback[] = data.map((item) => {
-          return {
-            ...item,
-            user: null,
-            guest: null,
-            grain:
-              typeof item.grain === "object" && item.grain !== null
-                ? item.grain
-                : null,
-          };
-        });
-
-        // Create a temporary list of authors
-        const tempAuthors: Author[] = [];
-
-        // Fetch user and guest information
-        for (let i = 0; i < processedFeedbacks.length; i++) {
-          const feedback = processedFeedbacks[i];
-
-          if (feedback.user_id) {
-            const { data: userData } = await supabase
-              .from("users")
-              .select("nom, prenom")
-              .eq("id", feedback.user_id)
-              .single();
-
-            if (userData) {
-              processedFeedbacks[i].user = userData as UserData;
-              
-              // Add user to authors list if not already there
-              if (!tempAuthors.some(author => author.id === feedback.user_id)) {
-                tempAuthors.push({
-                  id: feedback.user_id,
-                  name: `${userData.prenom} ${userData.nom}`,
-                  type: "user"
-                });
-              }
-            }
-          }
-
-          if (feedback.guest_id) {
-            const { data: guestData } = await supabase
-              .from("guests")
-              .select("nom, prenom")
-              .eq("id", feedback.guest_id)
-              .single();
-
-            if (guestData) {
-              processedFeedbacks[i].guest = guestData as UserData;
-              
-              // Add guest to authors list if not already there
-              if (!tempAuthors.some(author => author.id === feedback.guest_id)) {
-                tempAuthors.push({
-                  id: feedback.guest_id,
-                  name: `${guestData.prenom} ${guestData.nom}`,
-                  type: "guest"
-                });
-              }
-            }
-          }
-        }
-
-        // Update the authors state
-        setAuthors(tempAuthors);
-        setFeedbacks(processedFeedbacks);
-      }
-    } catch (error: any) {
-      console.error("Erreur lors du chargement des feedbacks:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les commentaires",
-        variant: "destructive",
-      });
-    }
-  };
-
-  useEffect(() => {
-    fetchFeedbacks();
-  }, [selectedGrainId, statusFilter, selectedAuthorId, projectId]);
-
-  const toggleFeedbackStatus = async (
-    feedbackId: string,
-    currentStatus: boolean
-  ) => {
-    try {
-      const { error } = await supabase
-        .from("feedbacks")
-        .update({ done: !currentStatus })
-        .eq("id", feedbackId);
-
-      if (error) throw error;
-
-      setFeedbacks(
-        feedbacks.map((feedback) =>
-          feedback.id === feedbackId
-            ? { ...feedback, done: !currentStatus }
-            : feedback
-        )
-      );
-
-      toast({
-        title: "Succès",
-        description: currentStatus
-          ? "Le commentaire a été marqué comme non traité"
-          : "Le commentaire a été marqué comme traité",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le statut du commentaire",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const formatTimecode = (seconds: number | null) => {
-    if (seconds === null) return "";
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const getCommenterName = (feedback: Feedback) => {
-    if (feedback.user && feedback.user.prenom && feedback.user.nom) {
-      return `${feedback.user.prenom} ${feedback.user.nom} (User)`;
-    } else if (feedback.guest && feedback.guest.prenom && feedback.guest.nom) {
-      return `${feedback.guest.prenom} ${feedback.guest.nom} (Guest)`;
-    }
-    return "Anonyme";
-  };
-
-  const getGrainTitle = (feedback: Feedback) => {
-    return feedback.grain?.title || "Inconnu";
-  };
+  const {
+    loading,
+    projectTitle,
+    grains,
+    feedbacks,
+    authors,
+    selectedGrainId,
+    setSelectedGrainId,
+    statusFilter,
+    setStatusFilter,
+    selectedAuthorId,
+    setSelectedAuthorId,
+    toggleFeedbackStatus,
+    fetchFeedbacks
+  } = useProjectComments(projectId);
 
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
@@ -315,74 +49,17 @@ export default function CommentsList() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-            <div className="flex gap-4 flex-col sm:flex-row">
-              <div className="w-full sm:w-64">
-                <Select
-                  value={selectedGrainId || "all"}
-                  onValueChange={(value) =>
-                    setSelectedGrainId(value === "all" ? null : value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrer par grain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les grains</SelectItem>
-                    {grains.map((grain) => (
-                      <SelectItem key={grain.id} value={grain.id}>
-                        {grain.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-full sm:w-64">
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value) =>
-                    setStatusFilter(value as "all" | "done" | "pending")
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrer par statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="done">Traités</SelectItem>
-                    <SelectItem value="pending">Non traités</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="w-full sm:w-64">
-                <Select
-                  value={selectedAuthorId || "all"}
-                  onValueChange={(value) =>
-                    setSelectedAuthorId(value === "all" ? null : value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrer par auteur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les auteurs</SelectItem>
-                    {authors.map((author) => (
-                      <SelectItem key={author.id} value={author.id}>
-                        {author.name} ({author.type === "user" ? "Utilisateur" : "Invité"})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Button variant="outline" onClick={() => fetchFeedbacks()}>
-              <Filter className="h-4 w-4 mr-2" />
-              Actualiser
-            </Button>
-          </div>
+          <CommentsFilters 
+            grains={grains}
+            authors={authors}
+            selectedGrainId={selectedGrainId}
+            setSelectedGrainId={setSelectedGrainId}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            selectedAuthorId={selectedAuthorId}
+            setSelectedAuthorId={setSelectedAuthorId}
+            onRefresh={fetchFeedbacks}
+          />
 
           {loading ? (
             <div className="text-center py-12">
@@ -395,62 +72,11 @@ export default function CommentsList() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Nom du commentateur</TableHead>
-                    <TableHead>Grain</TableHead>
-                    <TableHead>Commentaire</TableHead>
-                    <TableHead>Capture</TableHead>
-                    <TableHead>Time Code</TableHead>
-                    <TableHead>Traité</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {feedbacks.map((feedback, index) => (
-                    <TableRow key={feedback.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{getCommenterName(feedback)}</TableCell>
-                      <TableCell>{getGrainTitle(feedback)}</TableCell>
-                      <TableCell>{feedback.content}</TableCell>
-                      <TableCell>
-                        {feedback.screenshot_url ? (
-                          <a
-                            href={feedback.screenshot_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-blue-500 hover:underline"
-                          >
-                            <img
-                              src={feedback.screenshot_url}
-                              alt="Capture"
-                              className="max-w-24 max-h-24"
-                            />
-                          </a>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {feedback.timecode !== null
-                          ? formatTimecode(feedback.timecode)
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={feedback.done}
-                          onCheckedChange={() =>
-                            toggleFeedbackStatus(feedback.id, feedback.done)
-                          }
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <CommentsTable 
+              feedbacks={feedbacks}
+              toggleFeedbackStatus={toggleFeedbackStatus}
+              formatTimecode={formatTimecode}
+            />
           )}
         </div>
       </main>
