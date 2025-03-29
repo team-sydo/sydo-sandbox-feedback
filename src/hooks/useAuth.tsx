@@ -1,6 +1,5 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,8 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (event === 'SIGNED_IN') {
-          // Defer user profile fetch with setTimeout
+        if (event === 'SIGNED_IN' && location.pathname === '/auth') {
+          // Only redirect if we're on the auth page
           setTimeout(() => {
             navigate('/dashboard');
           }, 0);
@@ -49,10 +49,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Don't redirect if we already have a session and are on a valid route
+      if (!session && location.pathname !== '/' && location.pathname !== '/auth') {
+        // Only redirect to auth if not on home or auth page
+        navigate('/auth');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
     try {
