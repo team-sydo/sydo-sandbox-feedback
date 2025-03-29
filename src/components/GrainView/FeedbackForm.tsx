@@ -234,7 +234,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
     }
   };
   return <div ref={dropZoneRef} onDrop={handleDrop} onDragOver={handleDragOver} className="flex items-center px-4 py-3 gap-2 border-t bg-white">
-      {isVideoType && <Button size="sm" onClick={handleTogglePlayPause} className="bg-gray-200 hover:bg-gray-300 w-16">
+      {isVideoType && <Button size="sm" onClick={handleTogglePlayPause} className="w-16 bg-blue-500 hover:bg-blue-900">
           {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>}
 
