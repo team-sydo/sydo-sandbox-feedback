@@ -197,17 +197,20 @@ export default function GrainView() {
         {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          {/* <header className="flex items-center justify-between p-4 bg-white border-b">
+          <header className="flex items-center justify-between px-4 bg-white border-b">
             <div className="flex items-center">
-              <Link to="/dashboard" className="flex items-center text-gray-700 hover:text-gray-900 mr-6">
+              <Link
+                to="/dashboard"
+                className="flex items-center text-gray-700 hover:text-gray-900 mr-6"
+              >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 <span>Retour</span>
               </Link>
-
-              <div>
-                <h1 className="text-lg font-semibold">{grain.title}</h1>
-                <p className="text-sm text-gray-500">{grain.project?.title}</p>
-              </div>
+            </div>
+            <div className="flex justify-center items-center">
+              <h1 className="text-lg font-semibold">{grain.title}</h1>{" "}
+              <div className="w-12"></div>
+              <p className="text-sm text-gray-500">{grain.project?.title}</p>
             </div>
 
             <button
@@ -217,7 +220,7 @@ export default function GrainView() {
               <MessageCircle className="h-4 w-4 mr-1" />
               <span>Commentaires</span>
             </button>
-          </header> */}
+          </header>
 
           {/* Contenu (iframe ou video) */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
@@ -234,7 +237,7 @@ export default function GrainView() {
           </div>
           {/* footer - btn navigation/titres/form */}
           <div className=" flex overflow-hidden">
-            <div className="flex-1">
+            {/* <div className="flex-0 px-4">
               <button
                 className="flex items-center text-gray-700 hover:text-gray-900"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -250,12 +253,12 @@ export default function GrainView() {
                 <span>Retour</span>
               </Link>
             </div>
-            <div className="flex-1">
+            <div className="flex-0 px-10">
               <h1 className="text-lg font-semibold">{grain.title}</h1>
               <p className="text-sm text-gray-500">{grain.project?.title}</p>
-            </div>
+            </div> */}
             {/* Formulaire de feedback */}
-            <div className="flex-3">
+            <div className="flex-1">
               {user && (
                 <FeedbackForm
                   grainId={grain.id}
