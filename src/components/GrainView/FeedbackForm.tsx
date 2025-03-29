@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Image, Send } from 'lucide-react';
+import { Image, Send, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -82,6 +83,30 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
     e.preventDefault();
     e.stopPropagation();
   };
+
+  const handleTogglePlayPause = () => {
+    // Dispatch a custom event to be caught by the VideoPlayer component
+    const event = new CustomEvent('toggle-video-playback', {
+      detail: { isPlaying: isVideoPlaying }
+    });
+    document.dispatchEvent(event);
+    
+    // Update local state
+    setIsVideoPlaying(!isVideoPlaying);
+  };
+  
+  // Event listener to sync player state changes from the VideoPlayer component
+  React.useEffect(() => {
+    const handlePlayStateChange = (event: CustomEvent) => {
+      setIsVideoPlaying(event.detail.isPlaying);
+    };
+    
+    document.addEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
+    
+    return () => {
+      document.removeEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
+    };
+  }, []);
 
   const handleAnnotationSubmit = async (annotationContent: string, annotatedImageUrl: string) => {
     if (!annotationContent.trim()) return;
@@ -167,6 +192,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setSubmitting(true);
       
       // Déterminer le timecode pour les vidéos
+      // Si la vidéo est en pause, on utilise le timecode actuel
+      // Important: Pour les feedbacks quand la vidéo est en pause, on s'assure de capturer le timecode
       const timecode = isVideoType ? currentTime : null;
       
       // Uploader la capture d'écran si elle existe
@@ -246,10 +273,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       {isVideoType && (
         <Button
           size="sm"
-
+          onClick={handleTogglePlayPause}
           className="bg-gray-200 hover:bg-gray-300"
         >
-
+          {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
       )}
 

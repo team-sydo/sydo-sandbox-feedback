@@ -13,6 +13,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   
+  // Event handler for external play/pause toggling
+  useEffect(() => {
+    const handleTogglePlayback = (event: CustomEvent) => {
+      const video = videoRef.current;
+      if (!video) return;
+      
+      const isCurrentlyPlaying = !event.detail.isPlaying;
+      
+      if (isCurrentlyPlaying) {
+        video.pause();
+      } else {
+        video.play();
+      }
+    };
+    
+    document.addEventListener('toggle-video-playback', handleTogglePlayback as EventListener);
+    
+    return () => {
+      document.removeEventListener('toggle-video-playback', handleTogglePlayback as EventListener);
+    };
+  }, []);
+  
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -38,16 +60,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
     } else {
       video.play();
     }
-    
-    setIsPlaying(!isPlaying);
   };
   
   const handlePlay = () => {
     setIsPlaying(true);
+    
+    // Dispatch custom event to notify FeedbackForm of state change
+    const event = new CustomEvent('video-play-state-changed', {
+      detail: { isPlaying: true }
+    });
+    document.dispatchEvent(event);
   };
   
   const handlePause = () => {
     setIsPlaying(false);
+    
+    // Dispatch custom event to notify FeedbackForm of state change
+    const event = new CustomEvent('video-play-state-changed', {
+      detail: { isPlaying: false }
+    });
+    document.dispatchEvent(event);
   };
 
   return (
