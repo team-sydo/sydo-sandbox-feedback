@@ -193,10 +193,10 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
           )}
         </div>
         
-        <div className="flex-1 overflow-auto bg-gray-100 relative">
-          <canvas ref={canvasElRef} className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+        <div className="flex-1 overflow-auto bg-gray-900 flex items-center justify-center relative">
+          <canvas ref={canvasElRef} className="" id="canvas"/>
           {!imagePreview && (
-            <div className="absolute inset-0 flex items-center justify-center text-4xl font-bold text-gray-400">
+            <div className=" inset-0 flex items-center justify-center text-4xl font-bold text-gray-400">
               Capture de l'iframe
             </div>
           )}

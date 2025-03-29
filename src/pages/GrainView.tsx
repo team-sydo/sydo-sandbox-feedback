@@ -237,7 +237,7 @@ export default function GrainView() {
           </div>
           
           {/* Formulaire de feedback */}
-          <div className="flex-1">
+          <div >
             {user && grain && (
               <FeedbackForm
                 grainId={grain.id}
