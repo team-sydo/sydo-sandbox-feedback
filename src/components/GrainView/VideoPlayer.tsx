@@ -19,12 +19,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
       const video = videoRef.current;
       if (!video) return;
       
-      const isCurrentlyPlaying = !event.detail.isPlaying;
-      
-      if (isCurrentlyPlaying) {
-        video.pause();
-      } else {
+      // Important change: Directly use the isPlaying value from the event
+      // rather than inverting the current value
+      if (event.detail.isPlaying) {
         video.play();
+      } else {
+        video.pause();
       }
     };
     
@@ -55,11 +55,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
     const video = videoRef.current;
     if (!video) return;
     
-    if (isPlaying) {
-      video.pause();
-    } else {
-      video.play();
-    }
+    // Dispatch the event with the new state (opposite of current state)
+    const newPlayState = !isPlaying;
+    const event = new CustomEvent('toggle-video-playback', {
+      detail: { isPlaying: newPlayState }
+    });
+    document.dispatchEvent(event);
+    
+    // The state will be updated by the play/pause handlers
   };
   
   const handlePlay = () => {

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageAnnotationModal from './ImageAnnotationModal';
+
 interface FeedbackFormProps {
   grainId: string;
   projectId: string;
@@ -12,6 +13,7 @@ interface FeedbackFormProps {
   isVideoType: boolean;
   onFeedbackSubmitted: () => void;
 }
+
 const FeedbackForm: React.FC<FeedbackFormProps> = ({
   grainId,
   projectId,
@@ -27,9 +29,11 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
   };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     if (file) {
@@ -45,9 +49,11 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setIsAnnotationModalOpen(true);
     }
   };
+
   const handleCaptureClick = () => {
     fileInputRef.current?.click();
   };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -65,24 +71,25 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setIsAnnotationModalOpen(true);
     }
   };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
+
   const handleTogglePlayPause = () => {
-    // Dispatch a custom event to be caught by the VideoPlayer component
+    const newPlayState = !isVideoPlaying;
+    
     const event = new CustomEvent('toggle-video-playback', {
       detail: {
-        isPlaying: isVideoPlaying
+        isPlaying: newPlayState
       }
     });
     document.dispatchEvent(event);
 
-    // Update local state
-    setIsVideoPlaying(!isVideoPlaying);
+    setIsVideoPlaying(newPlayState);
   };
 
-  // Event listener to sync player state changes from the VideoPlayer component
   React.useEffect(() => {
     const handlePlayStateChange = (event: CustomEvent) => {
       setIsVideoPlaying(event.detail.isPlaying);
@@ -92,27 +99,24 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       document.removeEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
     };
   }, []);
+
   const handleAnnotationSubmit = async (annotationContent: string, annotatedImageUrl: string) => {
     if (!annotationContent.trim()) return;
     try {
       setSubmitting(true);
 
-      // Déterminer le timecode pour les vidéos
       const timecode = isVideoType ? currentTime : null;
 
-      // Convert base64 image to a file
       const base64Response = await fetch(annotatedImageUrl);
       const blob = await base64Response.blob();
       const annotatedFile = new File([blob], `annotation-${Date.now()}.png`, {
         type: 'image/png'
       });
 
-      // Uploader la capture d'écran
       const fileExt = 'png';
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Uploader la capture d'écran
       const {
         error: uploadError
       } = await supabase.storage.from('feedback-screenshots').upload(filePath, annotatedFile, {
@@ -120,13 +124,11 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       });
       if (uploadError) throw uploadError;
 
-      // Récupérer l'URL publique
       const {
         data: urlData
       } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
       const screenshotUrl = urlData.publicUrl;
 
-      // Créer le feedback dans la base de données
       const {
         error
       } = await supabase.from('feedbacks').insert({
@@ -140,7 +142,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       });
       if (error) throw error;
 
-      // Réinitialiser le formulaire
       setContent('');
       setScreenshotFile(null);
       if (fileInputRef.current) {
@@ -151,7 +152,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         description: "Votre commentaire avec annotation a été enregistré avec succès"
       });
 
-      // Notifier le parent que le feedback a été soumis
       onFeedbackSubmitted();
     } catch (error: any) {
       toast({
@@ -163,25 +163,20 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setSubmitting(false);
     }
   };
+
   const submitFeedback = async () => {
     if (!content.trim()) return;
     try {
       setSubmitting(true);
 
-      // Déterminer le timecode pour les vidéos
-      // Si la vidéo est en pause, on utilise le timecode actuel
-      // Important: Pour les feedbacks quand la vidéo est en pause, on s'assure de capturer le timecode
       const timecode = isVideoType ? currentTime : null;
 
-      // Uploader la capture d'écran si elle existe
       let screenshotUrl = null;
       if (screenshotFile) {
-        // Générer un nom de fichier unique
         const fileExt = screenshotFile.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        // Uploader la capture d'écran
         const {
           error: uploadError
         } = await supabase.storage.from('feedback-screenshots').upload(filePath, screenshotFile, {
@@ -189,14 +184,12 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         });
         if (uploadError) throw uploadError;
 
-        // Récupérer l'URL publique
         const {
           data: urlData
         } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
         screenshotUrl = urlData.publicUrl;
       }
 
-      // Créer le feedback dans la base de données
       const {
         error
       } = await supabase.from('feedbacks').insert({
@@ -210,7 +203,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       });
       if (error) throw error;
 
-      // Réinitialiser le formulaire
       setContent('');
       setScreenshotFile(null);
       if (fileInputRef.current) {
@@ -221,7 +213,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         description: "Votre commentaire a été enregistré avec succès"
       });
 
-      // Notifier le parent que le feedback a été soumis
       onFeedbackSubmitted();
     } catch (error: any) {
       toast({
@@ -233,6 +224,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       setSubmitting(false);
     }
   };
+
   return <div ref={dropZoneRef} onDrop={handleDrop} onDragOver={handleDragOver} className="flex items-center px-4 py-3 gap-2 border-t bg-white">
       {isVideoType && <Button size="sm" onClick={handleTogglePlayPause} className="w-16 bg-blue-500 hover:bg-blue-900">
           {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -254,4 +246,5 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       <ImageAnnotationModal isOpen={isAnnotationModalOpen} onClose={() => setIsAnnotationModalOpen(false)} imageFile={screenshotFile} onSubmit={handleAnnotationSubmit} timecode={currentTime} />
     </div>;
 };
+
 export default FeedbackForm;
