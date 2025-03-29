@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,12 @@ import {
 interface UserData {
   nom: string;
   prenom: string;
+}
+
+interface Author {
+  id: string;
+  name: string;
+  type: "user" | "guest";
 }
 
 interface Feedback {
@@ -62,6 +69,8 @@ export default function CommentsList() {
   const [statusFilter, setStatusFilter] = useState<"all" | "done" | "pending">(
     "all"
   );
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -108,7 +117,7 @@ export default function CommentsList() {
     if (!projectId) return;
 
     try {
-      // Use project_id directly instead of grain.project_id
+      // Use the projectId directly to filter feedbacks
       let query = supabase
         .from("feedbacks")
         .select(
@@ -129,6 +138,17 @@ export default function CommentsList() {
         query = query.eq("done", false);
       }
 
+      if (selectedAuthorId) {
+        const selectedAuthor = authors.find(author => author.id === selectedAuthorId);
+        if (selectedAuthor) {
+          if (selectedAuthor.type === "user") {
+            query = query.eq("user_id", selectedAuthorId);
+          } else {
+            query = query.eq("guest_id", selectedAuthorId);
+          }
+        }
+      }
+
       const { data, error } = await query.order("created_at", {
         ascending: false,
       });
@@ -136,12 +156,12 @@ export default function CommentsList() {
       if (error) throw error;
 
       if (data) {
-        // Create a separate function to get user and guest data when needed
+        // Process the feedbacks
         const processedFeedbacks: Feedback[] = data.map((item) => {
           return {
             ...item,
-            user: null, // We'll handle user data separately if needed
-            guest: null, // We'll handle guest data separately if needed
+            user: null,
+            guest: null,
             grain:
               typeof item.grain === "object" && item.grain !== null
                 ? item.grain
@@ -149,7 +169,10 @@ export default function CommentsList() {
           };
         });
 
-        // For feedbacks with user_id or guest_id, fetch their information separately
+        // Create a temporary list of authors
+        const tempAuthors: Author[] = [];
+
+        // Fetch user and guest information
         for (let i = 0; i < processedFeedbacks.length; i++) {
           const feedback = processedFeedbacks[i];
 
@@ -162,6 +185,15 @@ export default function CommentsList() {
 
             if (userData) {
               processedFeedbacks[i].user = userData as UserData;
+              
+              // Add user to authors list if not already there
+              if (!tempAuthors.some(author => author.id === feedback.user_id)) {
+                tempAuthors.push({
+                  id: feedback.user_id,
+                  name: `${userData.prenom} ${userData.nom}`,
+                  type: "user"
+                });
+              }
             }
           }
 
@@ -174,10 +206,21 @@ export default function CommentsList() {
 
             if (guestData) {
               processedFeedbacks[i].guest = guestData as UserData;
+              
+              // Add guest to authors list if not already there
+              if (!tempAuthors.some(author => author.id === feedback.guest_id)) {
+                tempAuthors.push({
+                  id: feedback.guest_id,
+                  name: `${guestData.prenom} ${guestData.nom}`,
+                  type: "guest"
+                });
+              }
             }
           }
         }
 
+        // Update the authors state
+        setAuthors(tempAuthors);
         setFeedbacks(processedFeedbacks);
       }
     } catch (error: any) {
@@ -192,7 +235,7 @@ export default function CommentsList() {
 
   useEffect(() => {
     fetchFeedbacks();
-  }, [selectedGrainId, statusFilter, projectId]);
+  }, [selectedGrainId, statusFilter, selectedAuthorId, projectId]);
 
   const toggleFeedbackStatus = async (
     feedbackId: string,
@@ -309,6 +352,27 @@ export default function CommentsList() {
                     <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="done">Traités</SelectItem>
                     <SelectItem value="pending">Non traités</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="w-full sm:w-64">
+                <Select
+                  value={selectedAuthorId || "all"}
+                  onValueChange={(value) =>
+                    setSelectedAuthorId(value === "all" ? null : value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrer par auteur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les auteurs</SelectItem>
+                    {authors.map((author) => (
+                      <SelectItem key={author.id} value={author.id}>
+                        {author.name} ({author.type === "user" ? "Utilisateur" : "Invité"})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
