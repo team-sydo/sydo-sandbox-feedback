@@ -193,7 +193,7 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
           )}
         </div>
         
-        <div className="flex-1 overflow-auto bg-gray-900 flex items-center justify-center relative">
+        <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center relative">
           <canvas ref={canvasElRef} className="" id="canvas"/>
           {!imagePreview && (
             <div className=" inset-0 flex items-center justify-center text-4xl font-bold text-gray-400">

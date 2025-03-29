@@ -1,5 +1,5 @@
 
-import { Eye, CheckCircle, ExternalLink } from "lucide-react";
+import { Eye, CheckCircle, ExternalLink, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ interface Grain {
   type: 'web' | 'video';
   url: string;
   done: boolean;
+  project_id: string;
 }
 
 interface GrainsListProps {
@@ -54,6 +55,12 @@ export function GrainsList({ grains, onStatusToggle, isUserLoggedIn }: GrainsLis
                 <ExternalLink className="h-3.5 w-3.5" />
                 Ouvrir le lien
               </a>
+              <Button variant="outline" size="sm" asChild>
+              <Link to={`/project/${grain.project_id}/comments`}>
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Voir les retours
+              </Link>
+            </Button>
             </div>
             <div className="flex gap-2">
               <Link to={`/grain/${grain.id}`}>

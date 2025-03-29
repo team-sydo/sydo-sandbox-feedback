@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +15,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UserData {
   nom: string;
@@ -54,7 +59,9 @@ export default function CommentsList() {
   const [projectTitle, setProjectTitle] = useState("");
   const [grains, setGrains] = useState<Grain[]>([]);
   const [selectedGrainId, setSelectedGrainId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | "done" | "pending">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "done" | "pending">(
+    "all"
+  );
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -82,7 +89,6 @@ export default function CommentsList() {
         if (grainsData) setGrains(grainsData);
 
         await fetchFeedbacks();
-
       } catch (error: any) {
         console.error("Erreur lors du chargement des données:", error);
         toast({
@@ -105,10 +111,12 @@ export default function CommentsList() {
       // Use project_id directly instead of grain.project_id
       let query = supabase
         .from("feedbacks")
-        .select(`
+        .select(
+          `
           *,
           grain:grain_id(title)
-        `)
+        `
+        )
         .eq("project_id", projectId);
 
       if (selectedGrainId) {
@@ -121,50 +129,55 @@ export default function CommentsList() {
         query = query.eq("done", false);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data, error } = await query.order("created_at", {
+        ascending: false,
+      });
 
       if (error) throw error;
-      
+
       if (data) {
         // Create a separate function to get user and guest data when needed
-        const processedFeedbacks: Feedback[] = data.map(item => {
+        const processedFeedbacks: Feedback[] = data.map((item) => {
           return {
             ...item,
             user: null, // We'll handle user data separately if needed
             guest: null, // We'll handle guest data separately if needed
-            grain: typeof item.grain === 'object' && item.grain !== null ? item.grain : null
+            grain:
+              typeof item.grain === "object" && item.grain !== null
+                ? item.grain
+                : null,
           };
         });
-        
+
         // For feedbacks with user_id or guest_id, fetch their information separately
         for (let i = 0; i < processedFeedbacks.length; i++) {
           const feedback = processedFeedbacks[i];
-          
+
           if (feedback.user_id) {
             const { data: userData } = await supabase
               .from("users")
               .select("nom, prenom")
               .eq("id", feedback.user_id)
               .single();
-            
+
             if (userData) {
               processedFeedbacks[i].user = userData as UserData;
             }
           }
-          
+
           if (feedback.guest_id) {
             const { data: guestData } = await supabase
               .from("guests")
               .select("nom, prenom")
               .eq("id", feedback.guest_id)
               .single();
-            
+
             if (guestData) {
               processedFeedbacks[i].guest = guestData as UserData;
             }
           }
         }
-        
+
         setFeedbacks(processedFeedbacks);
       }
     } catch (error: any) {
@@ -181,7 +194,10 @@ export default function CommentsList() {
     fetchFeedbacks();
   }, [selectedGrainId, statusFilter, projectId]);
 
-  const toggleFeedbackStatus = async (feedbackId: string, currentStatus: boolean) => {
+  const toggleFeedbackStatus = async (
+    feedbackId: string,
+    currentStatus: boolean
+  ) => {
     try {
       const { error } = await supabase
         .from("feedbacks")
@@ -190,16 +206,18 @@ export default function CommentsList() {
 
       if (error) throw error;
 
-      setFeedbacks(feedbacks.map(feedback => 
-        feedback.id === feedbackId 
-          ? { ...feedback, done: !currentStatus } 
-          : feedback
-      ));
+      setFeedbacks(
+        feedbacks.map((feedback) =>
+          feedback.id === feedbackId
+            ? { ...feedback, done: !currentStatus }
+            : feedback
+        )
+      );
 
       toast({
         title: "Succès",
-        description: currentStatus 
-          ? "Le commentaire a été marqué comme non traité" 
+        description: currentStatus
+          ? "Le commentaire a été marqué comme non traité"
           : "Le commentaire a été marqué comme traité",
       });
     } catch (error: any) {
@@ -215,7 +233,9 @@ export default function CommentsList() {
     if (seconds === null) return "";
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const getCommenterName = (feedback: Feedback) => {
@@ -231,7 +251,9 @@ export default function CommentsList() {
     return feedback.grain?.title || "Inconnu";
   };
 
-  const userName = user ? `${user.user_metadata.prenom} ${user.user_metadata.nom}` : "";
+  const userName = user
+    ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
+    : "";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -240,9 +262,9 @@ export default function CommentsList() {
       <main className="container mx-auto py-8 px-4">
         <div className="mb-6">
           <Button variant="ghost" size="sm" asChild className="mb-4">
-            <Link to="/dashboard">
+            <Link to={`/project/${projectId}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour au dashboard
+              Retour
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">{projectTitle}</h1>
@@ -255,7 +277,9 @@ export default function CommentsList() {
               <div className="w-full sm:w-64">
                 <Select
                   value={selectedGrainId || "all"}
-                  onValueChange={(value) => setSelectedGrainId(value === "all" ? null : value)}
+                  onValueChange={(value) =>
+                    setSelectedGrainId(value === "all" ? null : value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Filtrer par grain" />
@@ -274,7 +298,9 @@ export default function CommentsList() {
               <div className="w-full sm:w-64">
                 <Select
                   value={statusFilter}
-                  onValueChange={(value) => setStatusFilter(value as "all" | "done" | "pending")}
+                  onValueChange={(value) =>
+                    setStatusFilter(value as "all" | "done" | "pending")
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Filtrer par statut" />
@@ -300,7 +326,9 @@ export default function CommentsList() {
             </div>
           ) : feedbacks.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">Aucun commentaire trouvé pour ce projet.</p>
+              <p className="text-gray-500">
+                Aucun commentaire trouvé pour ce projet.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -325,26 +353,33 @@ export default function CommentsList() {
                       <TableCell>{feedback.content}</TableCell>
                       <TableCell>
                         {feedback.screenshot_url ? (
-                          <a 
-                            href={feedback.screenshot_url} 
-                            target="_blank" 
+                          <a
+                            href={feedback.screenshot_url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-blue-500 hover:underline"
                           >
-                            <Image className="h-4 w-4" />
-                            <span>Capture associée</span>
+                            <img
+                              src={feedback.screenshot_url}
+                              alt="Capture"
+                              className="max-w-24 max-h-24"
+                            />
                           </a>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        {feedback.timecode !== null ? formatTimecode(feedback.timecode) : "-"}
+                        {feedback.timecode !== null
+                          ? formatTimecode(feedback.timecode)
+                          : "-"}
                       </TableCell>
                       <TableCell>
-                        <Checkbox 
-                          checked={feedback.done} 
-                          onCheckedChange={() => toggleFeedbackStatus(feedback.id, feedback.done)}
+                        <Checkbox
+                          checked={feedback.done}
+                          onCheckedChange={() =>
+                            toggleFeedbackStatus(feedback.id, feedback.done)
+                          }
                         />
                       </TableCell>
                     </TableRow>

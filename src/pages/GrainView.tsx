@@ -200,7 +200,7 @@ export default function GrainView() {
           <header className="flex items-center justify-between px-4 bg-white border-b">
             <div className="flex items-center">
               <Link
-                to="/dashboard"
+                to={`/project/${grain?.project_id}`}
                 className="flex items-center text-gray-700 hover:text-gray-900 mr-6"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />

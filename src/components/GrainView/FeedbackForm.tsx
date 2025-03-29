@@ -243,6 +243,16 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       onDragOver={handleDragOver}
       className="flex items-center px-4 py-3 gap-2 border-t bg-white"
     >
+      {isVideoType && (
+        <Button
+          size="sm"
+
+          className="bg-gray-200 hover:bg-gray-300"
+        >
+
+        </Button>
+      )}
+
       <input
         type="text"
         placeholder="Ajouter un commentaire..."

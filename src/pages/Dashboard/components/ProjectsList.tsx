@@ -31,7 +31,8 @@ export function ProjectsList({ projects, loading }: ProjectsListProps) {
           key={project.id}
           id={project.id}
           title={project.title}
-          client={project.client_name || project.description || ""}
+          description={project.description || ""}
+          client={project.client_name}
           sites={project.sites || 0}
           videos={project.videos || 0}
           status={project.active ? "actif" : "archivé"}
