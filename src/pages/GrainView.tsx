@@ -181,18 +181,7 @@ export default function GrainView() {
       <NavBar userName={userName} />
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar pour les feedbacks */}
-        <aside
-          className={`absolute w-72 h-full bg-gray-50 border-r transform transition-transform duration-300 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } left-0 top-0 bottom-0 z-20 mt-16 md:mt-0`}
-        >
-          <FeedbacksList
-            feedbacks={feedbacks}
-            onToggleStatus={toggleFeedbackStatus}
-            onClose={() => setSidebarOpen(false)}
-          />
-        </aside>
+       
 
         {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -250,6 +239,19 @@ export default function GrainView() {
             )}
           </div>
         </div>
+         {/* Sidebar pour les feedbacks */}
+        <aside
+          className={`fixed w-72 h-full bg-gray-50 border-l transform transition-transform duration-300 ${
+            sidebarOpen ? "translate-x-0" : "translate-x-full"
+          } top-0 bottom-0 z-20 mt-16 md:mt-0`}
+          style={{ right: sidebarOpen ? 0 : "-30vw" }}
+        >
+          <FeedbacksList
+            feedbacks={feedbacks}
+            onToggleStatus={toggleFeedbackStatus}
+            onClose={() => setSidebarOpen(false)}
+          />
+        </aside>
       </div>
     </div>
   );
