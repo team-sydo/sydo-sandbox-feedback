@@ -1,11 +1,9 @@
-
 import React, { useRef, useState } from 'react';
 import { Image, Send, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageAnnotationModal from './ImageAnnotationModal';
-
 interface FeedbackFormProps {
   grainId: string;
   projectId: string;
@@ -14,7 +12,6 @@ interface FeedbackFormProps {
   isVideoType: boolean;
   onFeedbackSubmitted: () => void;
 }
-
 const FeedbackForm: React.FC<FeedbackFormProps> = ({
   grainId,
   projectId,
@@ -28,174 +25,154 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
-  
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
   };
-  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    
     if (file) {
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Format invalide",
           description: "Veuillez sélectionner un fichier image",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-      
       setScreenshotFile(file);
       setIsAnnotationModalOpen(true);
     }
   };
-  
   const handleCaptureClick = () => {
     fileInputRef.current?.click();
   };
-
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Format invalide",
           description: "Veuillez sélectionner un fichier image",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-      
       setScreenshotFile(file);
       setIsAnnotationModalOpen(true);
     }
   };
-
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
-
   const handleTogglePlayPause = () => {
     // Dispatch a custom event to be caught by the VideoPlayer component
     const event = new CustomEvent('toggle-video-playback', {
-      detail: { isPlaying: isVideoPlaying }
+      detail: {
+        isPlaying: isVideoPlaying
+      }
     });
     document.dispatchEvent(event);
-    
+
     // Update local state
     setIsVideoPlaying(!isVideoPlaying);
   };
-  
+
   // Event listener to sync player state changes from the VideoPlayer component
   React.useEffect(() => {
     const handlePlayStateChange = (event: CustomEvent) => {
       setIsVideoPlaying(event.detail.isPlaying);
     };
-    
     document.addEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
-    
     return () => {
       document.removeEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
     };
   }, []);
-
   const handleAnnotationSubmit = async (annotationContent: string, annotatedImageUrl: string) => {
     if (!annotationContent.trim()) return;
-    
     try {
       setSubmitting(true);
-      
+
       // Déterminer le timecode pour les vidéos
       const timecode = isVideoType ? currentTime : null;
-      
+
       // Convert base64 image to a file
       const base64Response = await fetch(annotatedImageUrl);
       const blob = await base64Response.blob();
-      const annotatedFile = new File([blob], `annotation-${Date.now()}.png`, { type: 'image/png' });
-      
+      const annotatedFile = new File([blob], `annotation-${Date.now()}.png`, {
+        type: 'image/png'
+      });
+
       // Uploader la capture d'écran
       const fileExt = 'png';
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
-      
+
       // Uploader la capture d'écran
-      const { error: uploadError } = await supabase.storage
-        .from('feedback-screenshots')
-        .upload(filePath, annotatedFile, {
-          contentType: 'image/png',
-        });
-      
+      const {
+        error: uploadError
+      } = await supabase.storage.from('feedback-screenshots').upload(filePath, annotatedFile, {
+        contentType: 'image/png'
+      });
       if (uploadError) throw uploadError;
-      
+
       // Récupérer l'URL publique
-      const { data: urlData } = supabase.storage
-        .from('feedback-screenshots')
-        .getPublicUrl(filePath);
-      
+      const {
+        data: urlData
+      } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
       const screenshotUrl = urlData.publicUrl;
-      
+
       // Créer le feedback dans la base de données
-      const { error } = await supabase
-        .from('feedbacks')
-        .insert({
-          grain_id: grainId,
-          project_id: projectId,
-          content: annotationContent,
-          timecode,
-          screenshot_url: screenshotUrl,
-          user_id: userId,
-          done: false
-        });
-      
+      const {
+        error
+      } = await supabase.from('feedbacks').insert({
+        grain_id: grainId,
+        project_id: projectId,
+        content: annotationContent,
+        timecode,
+        screenshot_url: screenshotUrl,
+        user_id: userId,
+        done: false
+      });
       if (error) throw error;
-      
+
       // Réinitialiser le formulaire
       setContent('');
       setScreenshotFile(null);
-      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      
       toast({
         title: "Commentaire envoyé",
-        description: "Votre commentaire avec annotation a été enregistré avec succès",
+        description: "Votre commentaire avec annotation a été enregistré avec succès"
       });
-      
+
       // Notifier le parent que le feedback a été soumis
       onFeedbackSubmitted();
-      
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: error.message || "Impossible d'ajouter le commentaire",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
     }
   };
-  
   const submitFeedback = async () => {
     if (!content.trim()) return;
-    
     try {
       setSubmitting(true);
-      
+
       // Déterminer le timecode pour les vidéos
       // Si la vidéo est en pause, on utilise le timecode actuel
       // Important: Pour les feedbacks quand la vidéo est en pause, on s'assure de capturer le timecode
       const timecode = isVideoType ? currentTime : null;
-      
+
       // Uploader la capture d'écran si elle existe
       let screenshotUrl = null;
       if (screenshotFile) {
@@ -203,128 +180,78 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         const fileExt = screenshotFile.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
-        
+
         // Uploader la capture d'écran
-        const { error: uploadError } = await supabase.storage
-          .from('feedback-screenshots')
-          .upload(filePath, screenshotFile, {
-            contentType: screenshotFile.type,
-          });
-        
+        const {
+          error: uploadError
+        } = await supabase.storage.from('feedback-screenshots').upload(filePath, screenshotFile, {
+          contentType: screenshotFile.type
+        });
         if (uploadError) throw uploadError;
-        
+
         // Récupérer l'URL publique
-        const { data: urlData } = supabase.storage
-          .from('feedback-screenshots')
-          .getPublicUrl(filePath);
-        
+        const {
+          data: urlData
+        } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
         screenshotUrl = urlData.publicUrl;
       }
-      
+
       // Créer le feedback dans la base de données
-      const { error } = await supabase
-        .from('feedbacks')
-        .insert({
-          grain_id: grainId,
-          project_id: projectId,
-          content,
-          timecode,
-          screenshot_url: screenshotUrl,
-          user_id: userId,
-          done: false
-        });
-      
+      const {
+        error
+      } = await supabase.from('feedbacks').insert({
+        grain_id: grainId,
+        project_id: projectId,
+        content,
+        timecode,
+        screenshot_url: screenshotUrl,
+        user_id: userId,
+        done: false
+      });
       if (error) throw error;
-      
+
       // Réinitialiser le formulaire
       setContent('');
       setScreenshotFile(null);
-      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      
       toast({
         title: "Commentaire envoyé",
-        description: "Votre commentaire a été enregistré avec succès",
+        description: "Votre commentaire a été enregistré avec succès"
       });
-      
+
       // Notifier le parent que le feedback a été soumis
       onFeedbackSubmitted();
-      
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: error.message || "Impossible d'ajouter le commentaire",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
     }
   };
-
-  return (
-    <div 
-      ref={dropZoneRef} 
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      className="flex items-center px-4 py-3 gap-2 border-t bg-white"
-    >
-      {isVideoType && (
-        <Button
-          size="sm"
-          onClick={handleTogglePlayPause}
-          className="bg-gray-200 hover:bg-gray-300"
-        >
+  return <div ref={dropZoneRef} onDrop={handleDrop} onDragOver={handleDragOver} className="flex items-center px-4 py-3 gap-2 border-t bg-white">
+      {isVideoType && <Button size="sm" onClick={handleTogglePlayPause} className="bg-gray-200 hover:bg-gray-300 w-16">
           {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </Button>
-      )}
+        </Button>}
 
-      <input
-        type="text"
-        placeholder="Ajouter un commentaire..."
-        value={content}
-        onChange={handleContentChange}
-        className="flex-1 py-2 px-3 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary"
-      />
+      <input type="text" placeholder="Ajouter un commentaire..." value={content} onChange={handleContentChange} className="flex-1 py-2 px-3 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary" />
       
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={handleCaptureClick} 
-        disabled={submitting}
-        className="text-gray-600 whitespace-nowrap"
-      >
+      <Button variant="outline" size="sm" onClick={handleCaptureClick} disabled={submitting} className="text-gray-600 whitespace-nowrap">
         <Image className="h-4 w-4 mr-2" />
         Capture
       </Button>
       
-      <Button
-        size="sm"
-        onClick={submitFeedback}
-        disabled={!content.trim() || submitting}
-        className="bg-blue-500 hover:bg-blue-600"
-      >
+      <Button size="sm" onClick={submitFeedback} disabled={!content.trim() || submitting} className="bg-blue-500 hover:bg-blue-600">
         <Send className="h-4 w-4" />
       </Button>
       
-      <ImageAnnotationModal 
-        isOpen={isAnnotationModalOpen}
-        onClose={() => setIsAnnotationModalOpen(false)}
-        imageFile={screenshotFile}
-        onSubmit={handleAnnotationSubmit}
-        timecode={currentTime}
-      />
-    </div>
-  );
+      <ImageAnnotationModal isOpen={isAnnotationModalOpen} onClose={() => setIsAnnotationModalOpen(false)} imageFile={screenshotFile} onSubmit={handleAnnotationSubmit} timecode={currentTime} />
+    </div>;
 };
-
 export default FeedbackForm;
