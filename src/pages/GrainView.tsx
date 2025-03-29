@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +13,7 @@ import VideoPlayer from "@/components/GrainView/VideoPlayer";
 interface Grain {
   id: string;
   title: string;
-  type: 'web' | 'video';
+  type: "web" | "video";
   url: string;
   project_id: string;
   project?: {
@@ -37,45 +36,46 @@ export default function GrainView() {
   const { grainId } = useParams<{ grainId: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   // États
   const [grain, setGrain] = useState<Grain | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState<number>(0);
-  
+
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  
+
   useEffect(() => {
     const fetchGrainDetails = async () => {
       if (!grainId) return;
-      
+
       try {
         setLoading(true);
-        
+
         // Récupérer les détails du grain
         const { data: grainData, error: grainError } = await supabase
-          .from('grains')
-          .select(`
+          .from("grains")
+          .select(
+            `
             *,
             project:project_id (
               title
             )
-          `)
-          .eq('id', grainId)
+          `
+          )
+          .eq("id", grainId)
           .single();
-        
+
         if (grainError) throw grainError;
-        
+
         setGrain(grainData);
-        
+
         // Récupérer les feedbacks du grain pour l'utilisateur actuel
         if (user) {
           await fetchFeedbacks();
         }
-        
       } catch (error: any) {
         toast({
           title: "Erreur",
@@ -86,52 +86,59 @@ export default function GrainView() {
         setLoading(false);
       }
     };
-    
+
     fetchGrainDetails();
   }, [grainId, user, toast]);
 
   const fetchFeedbacks = async () => {
     if (!grainId || !user) return;
-    
+
     try {
       const { data: feedbacksData, error: feedbacksError } = await supabase
-        .from('feedbacks')
-        .select('*')
-        .eq('grain_id', grainId)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
+        .from("feedbacks")
+        .select("*")
+        .eq("grain_id", grainId)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
       if (feedbacksError) throw feedbacksError;
-      
+
       setFeedbacks(feedbacksData || []);
     } catch (error: any) {
       console.error("Erreur lors du chargement des feedbacks:", error);
     }
   };
-  
+
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
   };
-  
-  const toggleFeedbackStatus = async (feedbackId: string, currentStatus: boolean) => {
+
+  const toggleFeedbackStatus = async (
+    feedbackId: string,
+    currentStatus: boolean
+  ) => {
     try {
       const { error } = await supabase
-        .from('feedbacks')
+        .from("feedbacks")
         .update({ done: !currentStatus })
-        .eq('id', feedbackId);
-      
+        .eq("id", feedbackId);
+
       if (error) throw error;
-      
+
       // Mettre à jour l'état local
-      setFeedbacks(prev => 
-        prev.map(feedback => 
-          feedback.id === feedbackId ? { ...feedback, done: !currentStatus } : feedback
+      setFeedbacks((prev) =>
+        prev.map((feedback) =>
+          feedback.id === feedbackId
+            ? { ...feedback, done: !currentStatus }
+            : feedback
         )
       );
-      
+
       toast({
         title: currentStatus ? "Feedback rouvert" : "Feedback résolu",
-        description: currentStatus ? "Le feedback a été marqué comme non résolu" : "Le feedback a été marqué comme résolu",
+        description: currentStatus
+          ? "Le feedback a été marqué comme non résolu"
+          : "Le feedback a été marqué comme résolu",
       });
     } catch (error: any) {
       toast({
@@ -143,7 +150,9 @@ export default function GrainView() {
   };
 
   // Get user name for NavBar
-  const userName = user ? `${user.user_metadata.prenom} ${user.user_metadata.nom}` : "";
+  const userName = user
+    ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
+    : "";
 
   if (loading && !grain) {
     return (
@@ -168,69 +177,97 @@ export default function GrainView() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden w-full bg-gray-50">
       <NavBar userName={userName} />
-      
-      <div className="flex flex-1 overflow-hidden">
+
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar pour les feedbacks */}
-        <aside className={`w-72 h-full bg-gray-50 border-r transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed md:static left-0 top-0 bottom-0 z-20 mt-16 md:mt-0`}>
-          <FeedbacksList 
-            feedbacks={feedbacks} 
-            onToggleStatus={toggleFeedbackStatus} 
+        <aside
+          className={`absolute w-72 h-full bg-gray-50 border-r transform transition-transform duration-300 ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } left-0 top-0 bottom-0 z-20 mt-16 md:mt-0`}
+        >
+          <FeedbacksList
+            feedbacks={feedbacks}
+            onToggleStatus={toggleFeedbackStatus}
             onClose={() => setSidebarOpen(false)}
           />
         </aside>
-        
+
         {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="flex items-center justify-between p-4 bg-white border-b">
+          {/* <header className="flex items-center justify-between p-4 bg-white border-b">
             <div className="flex items-center">
               <Link to="/dashboard" className="flex items-center text-gray-700 hover:text-gray-900 mr-6">
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 <span>Retour</span>
               </Link>
-              
+
               <div>
                 <h1 className="text-lg font-semibold">{grain.title}</h1>
                 <p className="text-sm text-gray-500">{grain.project?.title}</p>
               </div>
             </div>
-            
-            <button 
+
+            <button
               className="flex items-center text-gray-700 hover:text-gray-900"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <MessageCircle className="h-4 w-4 mr-1" />
               <span>Commentaires</span>
             </button>
-          </header>
-          
+          </header> */}
+
           {/* Contenu (iframe ou video) */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
-            {grain.type === 'web' ? (
-              <iframe 
+            {grain.type === "web" ? (
+              <iframe
                 ref={iframeRef}
-                src={grain.url} 
+                src={grain.url}
                 className="w-full h-full border-0"
-                title={grain.title} 
+                title={grain.title}
               />
             ) : (
               <VideoPlayer url={grain.url} onTimeUpdate={handleTimeUpdate} />
             )}
           </div>
-          
-          {/* Formulaire de feedback */}
-          {user && (
-            <FeedbackForm
-              grainId={grain.id}
-              projectId={grain.project_id}
-              userId={user.id}
-              currentTime={grain.type === 'video' ? currentTime : null}
-              isVideoType={grain.type === 'video'}
-              onFeedbackSubmitted={fetchFeedbacks}
-            />
-          )}
+          {/* footer - btn navigation/titres/form */}
+          <div className=" flex overflow-hidden">
+            <div className="flex-1">
+              <button
+                className="flex items-center text-gray-700 hover:text-gray-900"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <MessageCircle className="h-4 w-4 mr-1" />
+                <span>Commentaires</span>
+              </button>
+              <Link
+                to="/dashboard"
+                className="flex items-center text-gray-700 hover:text-gray-900 mr-6"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <span>Retour</span>
+              </Link>
+            </div>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold">{grain.title}</h1>
+              <p className="text-sm text-gray-500">{grain.project?.title}</p>
+            </div>
+            {/* Formulaire de feedback */}
+            <div className="flex-3">
+              {user && (
+                <FeedbackForm
+                  grainId={grain.id}
+                  projectId={grain.project_id}
+                  userId={user.id}
+                  currentTime={grain.type === "video" ? currentTime : null}
+                  isVideoType={grain.type === "video"}
+                  onFeedbackSubmitted={fetchFeedbacks}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
