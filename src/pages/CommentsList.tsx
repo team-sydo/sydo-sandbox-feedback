@@ -8,10 +8,22 @@ import { useProjectComments } from "@/hooks/useProjectComments";
 import { CommentsFilters } from "@/components/comments/CommentsFilters";
 import { CommentsTable } from "@/components/comments/CommentsTable";
 import { formatTimecode } from "@/utils/formatting";
+import { GuestSelectionModal } from "@/components/guest/GuestSelectionModal";
+import { useGuestSession } from "@/hooks/useGuestSession";
 
 export default function CommentsList() {
   const { projectId } = useParams();
   const { user } = useAuth();
+  
+  // Guest session management
+  const {
+    guestData,
+    showGuestModal,
+    setGuestSession,
+    promptGuestSelection,
+    setShowGuestModal
+  } = useGuestSession();
+  
   const {
     loading,
     projectTitle,
@@ -26,7 +38,14 @@ export default function CommentsList() {
     setSelectedAuthorId,
     toggleFeedbackStatus,
     fetchFeedbacks
-  } = useProjectComments(projectId);
+  } = useProjectComments(projectId, user, guestData);
+
+  // Check if needs guest modal on component mount
+  useEffect(() => {
+    if (!user && !guestData) {
+      promptGuestSelection();
+    }
+  }, [user, guestData, promptGuestSelection]);
 
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
@@ -34,7 +53,12 @@ export default function CommentsList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar userName={userName} />
+      <NavBar 
+        userName={userName} 
+        isProjectPage={true} 
+        onGuestPrompt={promptGuestSelection} 
+        guestData={guestData}
+      />
 
       <main className="container mx-auto py-8 px-4">
         <div className="mb-6">
@@ -80,6 +104,15 @@ export default function CommentsList() {
           )}
         </div>
       </main>
+
+      {/* Guest selection modal */}
+      {showGuestModal && projectId && (
+        <GuestSelectionModal
+          projectId={projectId}
+          onClose={() => setShowGuestModal(false)}
+          onGuestSelected={setGuestSession}
+        />
+      )}
     </div>
   );
 }
