@@ -16,6 +16,7 @@ export function NavBar({ userName }: NavBarProps) {
 
   const handleAuthAction = () => {
     if (user) {
+      // Simply sign out without redirecting - the useAuth context will handle staying on the same page
       signOut();
     } else {
       setIsLoginModalOpen(true);

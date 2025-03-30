@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const currentPath = location.pathname;
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -36,10 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             navigate('/dashboard');
           }, 0);
         } else if (event === 'SIGNED_OUT') {
-          // Defer navigation with setTimeout
-          setTimeout(() => {
-            navigate('/auth');
-          }, 0);
+          // Only redirect to auth page if NOT on a project view page
+          if (!currentPath.startsWith('/project/')) {
+            setTimeout(() => {
+              navigate('/auth');
+            }, 0);
+          }
+          // No redirection for project pages - user stays on the same page
         }
       }
     );
@@ -51,14 +56,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
 
       // Don't redirect if we already have a session and are on a valid route
-      if (!session && location.pathname !== '/' && location.pathname !== '/auth') {
-        // Only redirect to auth if not on home or auth page
+      // or if we're on a project page (which is accessible without auth)
+      if (!session && 
+          !currentPath.startsWith('/project/') && 
+          currentPath !== '/' && 
+          currentPath !== '/auth') {
+        // Only redirect to auth if not on home, auth, or project page
         navigate('/auth');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, currentPath]);
 
   const signIn = async (email: string, password: string) => {
     try {
