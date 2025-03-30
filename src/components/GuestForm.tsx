@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDown, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 
 interface GuestFormProps {
   projectId: string;
@@ -20,6 +20,7 @@ interface Guest {
   id: string;
   prenom: string;
   nom: string;
+  poste?: string | null;
 }
 
 export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
@@ -34,99 +35,120 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
   const [formMode, setFormMode] = useState<'new' | 'existing'>('new');
   const { toast } = useToast();
 
+  // Fetch existing guests for this project
   useEffect(() => {
     const fetchGuests = async () => {
       try {
+        console.log("Fetching guests for project:", projectId);
         const { data, error } = await supabase
           .from('guests')
-          .select('id, prenom, nom')
+          .select('id, prenom, nom, poste')
           .eq('project_id', projectId);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching guests:", error);
+          throw error;
+        }
 
+        console.log("Fetched guests:", data);
         if (data && data.length > 0) {
           setExistingGuests(data);
         }
       } catch (error) {
-        console.error("Error fetching guests:", error);
+        console.error("Error in fetchGuests:", error);
       }
     };
 
-    fetchGuests();
+    if (projectId) {
+      fetchGuests();
+    }
   }, [projectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     try {
       setLoading(true);
+      console.log("Form mode:", formMode);
+      console.log("Selected guest ID:", selectedGuestId);
 
+      // If using existing guest
       if (formMode === 'existing' && selectedGuestId) {
         const selectedGuest = existingGuests.find(guest => guest.id === selectedGuestId);
+        console.log("Selected existing guest:", selectedGuest);
+        
         if (selectedGuest) {
+          // Use the existing guest data
           onSubmit(selectedGuest);
+          onClose();
           return;
         }
       }
 
-      if (!firstName.trim() || !lastName.trim()) {
-        toast({
-          title: "Erreur",
-          description: "Le prénom et le nom sont requis",
-          variant: "destructive",
-        });
-        return;
-      }
+      // For new guest
+      if (formMode === 'new' || !selectedGuestId) {
+        if (!firstName.trim() || !lastName.trim()) {
+          toast({
+            title: "Erreur",
+            description: "Le prénom et le nom sont requis",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      const guestData = {
-        prenom: firstName,
-        nom: lastName,
-        poste: position || null,
-        device,
-        navigateur: browser,
-        project_id: projectId
-      };
-
-      const { data, error } = await supabase
-        .from('guests')
-        .insert(guestData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      onSubmit(data || guestData);
-    } catch (error: any) {
-      console.error("Erreur lors de la création de l'invité:", error);
-      
-      if (formMode === 'new') {
-        onSubmit({
+        // Prepare data for new guest
+        const guestData = {
           prenom: firstName,
           nom: lastName,
           poste: position || null,
           device,
           navigateur: browser,
           project_id: projectId
+        };
+
+        console.log("Creating new guest with data:", guestData);
+
+        // Insert new guest into database
+        const { data, error } = await supabase
+          .from('guests')
+          .insert(guestData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error creating guest:", error);
+          throw error;
+        }
+
+        console.log("Created guest:", data);
+        onSubmit(data || guestData);
+        toast({
+          title: "Succès",
+          description: "Votre profil a été enregistré",
         });
       }
-      
+    } catch (error: any) {
+      console.error("Erreur lors de la création de l'invité:", error);
       toast({
-        title: "Information",
-        description: "Merci pour votre participation",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la création du profil",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
+      onClose();
     }
   };
 
   const handleGuestSelect = (guestId: string) => {
+    console.log("Selected guest with ID:", guestId);
     setSelectedGuestId(guestId);
-    setFormMode('existing');
     
     const selectedGuest = existingGuests.find(guest => guest.id === guestId);
     if (selectedGuest) {
       setFirstName(selectedGuest.prenom);
       setLastName(selectedGuest.nom);
+      setPosition(selectedGuest.poste || "");
     }
   };
 
