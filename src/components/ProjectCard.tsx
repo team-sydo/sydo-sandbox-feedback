@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -8,7 +9,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Video, MessageSquare, ExternalLink } from "lucide-react";
+import { FileText, Video, MessageSquare, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface ProjectCardProps {
   id: string;
@@ -18,6 +31,7 @@ interface ProjectCardProps {
   sites: number;
   videos: number;
   status: "actif" | "archivé";
+  onDelete?: (id: string) => void;
 }
 
 export function ProjectCard({
@@ -28,7 +42,25 @@ export function ProjectCard({
   sites,
   videos,
   status,
+  onDelete,
 }: ProjectCardProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleDelete = (e: React.MouseEvent) => {
+    // e.stopPropagation();
+    e.preventDefault();
+    if (onDelete) {
+      onDelete(id);
+    }
+    setIsOpen(false);
+  };
+
+  // Pour éviter la propagation du clic sur le bouton de suppression au lien parent
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <Link to={`/project/${id}`}>
       <Card className="overflow-hidden">
@@ -58,7 +90,33 @@ export function ProjectCard({
             </Button>
           </div>
         </CardContent>
-        <CardFooter className="bg-gray-50 justify-end gap-2"></CardFooter>
+        <CardFooter className="bg-gray-50 justify-end gap-2">
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            Supprimer
+          </Button>
+          {/* <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild onClick={handleDeleteClick}>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="h-4 w-4 mr-1" />
+                Supprimer
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action ne peut pas être annulée. Cela supprimera définitivement le projet
+                  "{title}" et tous les grains associés.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Supprimer</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog> */}
+        </CardFooter>
       </Card>
     </Link>
   );

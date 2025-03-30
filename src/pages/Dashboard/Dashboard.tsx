@@ -21,70 +21,112 @@ export default function Dashboard() {
 
   // Récupérer les projets de l'utilisateur au chargement
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!user) return;
-
-      try {
-        setLoading(true);
-        
-        // Requête pour récupérer les projets
-        const { data, error } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            clients (id, nom)
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Ajouter manuellement le comptage des sites et vidéos
-        const projectsWithCounts: Project[] = [];
-        
-        for (const project of (data || [])) {
-          // Compter les grains de type 'web'
-          const { count: sitesCount, error: sitesError } = await supabase
-            .from('grains')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .eq('type', 'web');
-            
-          // Compter les grains de type 'video'
-          const { count: videosCount, error: videosError } = await supabase
-            .from('grains')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .eq('type', 'video');
-            
-          if (sitesError) console.error("Error counting sites:", sitesError);
-          if (videosError) console.error("Error counting videos:", videosError);
-          
-          // Créer un nouvel objet avec toutes les propriétés typées correctement
-          const projectWithCounts: Project = {
-            ...project,
-            sites: sitesCount || 0,
-            videos: videosCount || 0,
-            client_name: project.clients ? project.clients.nom : null
-          };
-          
-          projectsWithCounts.push(projectWithCounts);
-        }
-        
-        setProjects(projectsWithCounts);
-      } catch (error: any) {
-        toast({
-          title: "Erreur",
-          description: error.message || "Impossible de charger les projets",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProjects();
   }, [user, toast]);
+
+  const fetchProjects = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      // Requête pour récupérer les projets
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          clients (id, nom)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Ajouter manuellement le comptage des sites et vidéos
+      const projectsWithCounts: Project[] = [];
+      
+      for (const project of (data || [])) {
+        // Compter les grains de type 'web'
+        const { count: sitesCount, error: sitesError } = await supabase
+          .from('grains')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .eq('type', 'web');
+          
+        // Compter les grains de type 'video'
+        const { count: videosCount, error: videosError } = await supabase
+          .from('grains')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .eq('type', 'video');
+          
+        if (sitesError) console.error("Error counting sites:", sitesError);
+        if (videosError) console.error("Error counting videos:", videosError);
+        
+        // Créer un nouvel objet avec toutes les propriétés typées correctement
+        const projectWithCounts: Project = {
+          ...project,
+          sites: sitesCount || 0,
+          videos: videosCount || 0,
+          client_name: project.clients ? project.clients.nom : null
+        };
+        
+        projectsWithCounts.push(projectWithCounts);
+      }
+      
+      setProjects(projectsWithCounts);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de charger les projets",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fonction pour supprimer un projet
+  const handleDeleteProject = async (projectId: string) => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Supprimer d'abord tous les grains associés au projet
+      const { error: grainsError } = await supabase
+        .from('grains')
+        .delete()
+        .eq('project_id', projectId);
+        
+      if (grainsError) throw grainsError;
+      
+      // Ensuite, supprimer le projet lui-même
+      const { error: projectError } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user.id);  // Sécurité supplémentaire
+        
+      if (projectError) throw projectError;
+      
+      // Mettre à jour la liste des projets
+      setProjects(projects.filter(project => project.id !== projectId));
+      
+      toast({
+        title: "Projet supprimé",
+        description: "Le projet a été supprimé avec succès",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer le projet",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filtrer les projets en fonction du filtre sélectionné
   const filteredProjects = projects.filter((project) => {
@@ -99,8 +141,7 @@ export default function Dashboard() {
     setIsNewProjectDialogOpen(false);
     // Recharger les projets
     if (user) {
-      // Simple refresh for now - could be optimized to just add the new project
-      window.location.reload();
+      fetchProjects();
     }
   };
 
@@ -129,6 +170,7 @@ export default function Dashboard() {
         <ProjectsList 
           projects={filteredProjects} 
           loading={loading} 
+          onDeleteProject={handleDeleteProject}
         />
       </main>
 
