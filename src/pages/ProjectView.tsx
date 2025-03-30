@@ -58,6 +58,7 @@ export default function ProjectView() {
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [guestCreated, setGuestCreated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
@@ -75,8 +76,9 @@ export default function ProjectView() {
 
       try {
         setLoading(true);
+        setError(null);
 
-        // Récupérer les détails du projet
+        // Récupérer les détails du projet en utilisant maybeSingle au lieu de single
         const { data: projectData, error: projectError } = await supabase
           .from("projects")
           .select(
@@ -89,7 +91,7 @@ export default function ProjectView() {
           `
           )
           .eq("id", projectId)
-          .single();
+          .maybeSingle();
 
         if (projectError) throw projectError;
 
@@ -98,6 +100,10 @@ export default function ProjectView() {
             ...projectData,
             client_name: projectData.clients ? projectData.clients.nom : null,
           });
+        } else {
+          // Si aucun projet n'est trouvé, définir un état d'erreur
+          setError("Projet non trouvé");
+          setProject(null);
         }
 
         // Récupérer les grains du projet
@@ -111,10 +117,11 @@ export default function ProjectView() {
 
         setGrains(grainsData || []);
       } catch (error: any) {
+        console.error("Error fetching project details:", error);
+        setError(error.message || "Une erreur s'est produite lors du chargement du projet");
         toast({
           title: "Erreur",
-          description:
-            error.message || "Impossible de charger les détails du projet",
+          description: error.message || "Impossible de charger les détails du projet",
           variant: "destructive",
         });
       } finally {
@@ -195,7 +202,7 @@ export default function ProjectView() {
     );
   }
 
-  if (!project) {
+  if (!project || error) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <NavBar userName={userName} />
@@ -205,7 +212,7 @@ export default function ProjectView() {
             <Button
               className="mt-4"
               variant="outline"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" /> Retour aux projets
             </Button>
@@ -231,9 +238,13 @@ export default function ProjectView() {
               Retour aux projets
             </Link>
           ) : (
-            <span className="text-sm text-gray-500">
-              Bienvenue sur ce projet
-            </span>
+            <Link
+              to="/"
+              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Retour aux projets
+            </Link>
           )}
         </div>
 
