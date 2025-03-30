@@ -2,49 +2,35 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Flag, Pencil, X } from 'lucide-react';
+import { Flag, Pencil } from 'lucide-react';
 import { fabric } from 'fabric';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ImageAnnotationModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  imageData: string | null;
+  onSave: (annotatedImageData: string) => void;
   onClose: () => void;
-  imageFile: File | null;
-  onSubmit: (content: string, annotatedImageUrl: string) => void;
   timecode?: number | null;
 }
 
 type AnnotationTool = 'select' | 'marker' | 'draw' | null;
 
 const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
-  isOpen,
+  isOpen = true,
+  imageData,
+  onSave,
   onClose,
-  imageFile,
-  onSubmit,
   timecode
 }) => {
   const [content, setContent] = useState('');
   const [activeTool, setActiveTool] = useState<AnnotationTool>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Load image preview when file changes
-  useEffect(() => {
-    if (imageFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(imageFile);
-    } else {
-      setImagePreview(null);
-    }
-  }, [imageFile]);
-
   // Initialize fabric canvas when modal opens
   useEffect(() => {
-    if (isOpen && imagePreview && canvasElRef.current) {
+    if (isOpen && imageData && canvasElRef.current) {
       // Initialize canvas
       if (!canvasRef.current) {
         canvasRef.current = new fabric.Canvas(canvasElRef.current, {
@@ -55,7 +41,7 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
       }
 
       // Load image onto canvas
-      fabric.Image.fromURL(imagePreview, (img) => {
+      fabric.Image.fromURL(imageData, (img) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -91,7 +77,7 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
         }
       };
     }
-  }, [isOpen, imagePreview]);
+  }, [isOpen, imageData]);
 
   // Handle tool selection
   useEffect(() => {
@@ -168,24 +154,16 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
       quality: 0.8
     });
 
-    onSubmit(content, annotatedImageUrl);
-    handleClose();
-  };
-
-  const handleClose = () => {
-    setContent('');
-    setActiveTool(null);
-    setImagePreview(null);
-    onClose();
+    onSave(annotatedImageUrl);
   };
 
   const isToolActive = (tool: AnnotationTool) => activeTool === tool;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl p-0 gap-0 h-[90vh] flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold">nouveau commentaire</h2>
+          <h2 className="text-xl font-bold">Nouveau commentaire</h2>
           {timecode !== null && timecode !== undefined && (
             <div className="text-sm text-gray-500">
               Timecode: {Math.floor(timecode / 60)}:{(timecode % 60).toString().padStart(2, '0')}
@@ -195,8 +173,8 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
         
         <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center relative">
           <canvas ref={canvasElRef} className="" id="canvas"/>
-          {!imagePreview && (
-            <div className=" inset-0 flex items-center justify-center text-4xl font-bold text-gray-400">
+          {!imageData && (
+            <div className="text-4xl font-bold text-gray-400">
               Capture de l'iframe
             </div>
           )}
@@ -204,7 +182,7 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
         
         <div className="p-4 border-t">
           <div className="mb-4">
-            <div className="text-sm font-medium mb-2">commentaire</div>
+            <div className="text-sm font-medium mb-2">Commentaire</div>
             <Textarea 
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -238,7 +216,7 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleClose}
+                onClick={onClose}
               >
                 Retour
               </Button>

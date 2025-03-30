@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import ImageAnnotationModal from "./ImageAnnotationModal";  // Changed from named import to default import
+import ImageAnnotationModal from "./ImageAnnotationModal";  // Default import
 import html2canvas from "html2canvas";
 import { Camera, Send } from "lucide-react";
 
@@ -201,6 +201,7 @@ export default function FeedbackForm({
           imageData={capturedImage}
           onSave={handleSaveAnnotation}
           onClose={() => setIsModalOpen(false)}
+          timecode={isVideoType ? currentTime : null}
         />
       )}
     </div>
