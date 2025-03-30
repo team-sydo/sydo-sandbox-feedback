@@ -40,7 +40,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
     const fetchGuests = async () => {
       try {
         console.log("Fetching guests for project:", projectId);
-        // Add enablePublic key to bypass RLS policies for public access
         const { data, error } = await supabase
           .from('guests')
           .select('id, prenom, nom, poste')
@@ -109,8 +108,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
 
         console.log("Creating new guest with data:", guestData);
 
-        // Insert new guest into database with a special flag to bypass RLS
-        // Add enablePublic key to bypass RLS policies for public access
+        // Insert new guest into database
         const { data, error } = await supabase
           .from('guests')
           .insert([guestData])
