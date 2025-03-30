@@ -12,11 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Plus, MessageSquare, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GrainForm } from "@/components/GrainForm";
 import { GrainsList } from "@/components/GrainsList";
-import { GuestForm } from "@/components/GuestForm";
+import { GuestSelectionModal } from "@/components/guest/GuestSelectionModal";
+import { useGuestSession } from "@/hooks/useGuestSession";
 
 interface Project {
   id: string;
@@ -54,76 +55,76 @@ export default function ProjectView() {
   const [project, setProject] = useState<Project | null>(null);
   const [grains, setGrains] = useState<Grain[]>([]);
   const [isGrainFormOpen, setIsGrainFormOpen] = useState(false);
-  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [guestCreated, setGuestCreated] = useState(false);
+  
+  // Guest session management
+  const {
+    guestData,
+    showGuestModal,
+    setGuestSession,
+    promptGuestSelection,
+    setShowGuestModal
+  } = useGuestSession();
 
-  // Vérifier si l'utilisateur est connecté
+  // Check if user is authenticated, if not, show guest modal
   useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    if (!authLoading && !user && !guestCreated) {
-      setIsGuestFormOpen(true);
+    if (!authLoading && !user && !guestData) {
+      promptGuestSelection();
     }
-  }, [user, authLoading, guestCreated]);
+  }, [user, authLoading, guestData, promptGuestSelection]);
 
-  // Charger les détails du projet
-  useEffect(() => {
-    const fetchProjectDetails = async () => {
-      if (!projectId) return;
+  const fetchProjectDetails = async () => {
+    if (!projectId) return;
 
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        // Récupérer les détails du projet
-        const { data: projectData, error: projectError } = await supabase
-          .from("projects")
-          .select(
-            `
+      // Récupérer les détails du projet
+      const { data: projectData, error: projectError } = await supabase
+        .from("projects")
+        .select(
+          `
             *,
             clients:client_id (
               id,
               nom
             )
           `
-          )
-          .eq("id", projectId)
-          .single();
+        )
+        .eq("id", projectId)
+        .single();
 
-        if (projectError) throw projectError;
+      if (projectError) throw projectError;
 
-        if (projectData) {
-          setProject({
-            ...projectData,
-            client_name: projectData.clients ? projectData.clients.nom : null,
-          });
-        }
-
-        // Récupérer les grains du projet
-        const { data: grainsData, error: grainsError } = await supabase
-          .from("grains")
-          .select("*")
-          .eq("project_id", projectId)
-          .order("created_at", { ascending: false });
-
-        if (grainsError) throw grainsError;
-
-        setGrains(grainsData || []);
-      } catch (error: any) {
-        toast({
-          title: "Erreur",
-          description:
-            error.message || "Impossible de charger les détails du projet",
-          variant: "destructive",
+      if (projectData) {
+        setProject({
+          ...projectData,
+          client_name: projectData.clients ? projectData.clients.nom : null,
         });
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchProjectDetails();
-  }, [projectId, toast]);
+      // Récupérer les grains du projet
+      const { data: grainsData, error: grainsError } = await supabase
+        .from("grains")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
 
-  // Gérer l'ajout d'un nouveau grain
+      if (grainsError) throw grainsError;
+
+      setGrains(grainsData || []);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description:
+          error.message || "Impossible de charger les détails du projet",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddGrain = (newGrain: Grain) => {
     setGrains((prev) => [newGrain, ...prev]);
     setIsGrainFormOpen(false);
@@ -134,7 +135,6 @@ export default function ProjectView() {
     });
   };
 
-  // Gérer la mise à jour du statut d'un grain
   const handleGrainStatusToggle = async (grainId: string, done: boolean) => {
     try {
       const { error } = await supabase
@@ -164,26 +164,46 @@ export default function ProjectView() {
     }
   };
 
-  // Gérer la soumission du formulaire invité
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
-    setGuestCreated(true);
-    setIsGuestFormOpen(false);
-
-    toast({
-      title: "Bienvenue !",
-      description: `Merci de votre participation, ${guest.prenom}`,
-    });
-  };
-
   // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
 
+  // Don't render anything until we have either a user or guest session (unless loading)
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <NavBar userName={userName} isProjectPage={true} />
+        <main className="flex-1 container mx-auto py-8 px-4">
+          <div className="text-center py-12">
+            <p className="text-gray-500">Chargement...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!user && !guestData && !showGuestModal) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <NavBar 
+          userName={userName} 
+          isProjectPage={true} 
+          onGuestPrompt={promptGuestSelection}
+        />
+        <main className="flex-1 container mx-auto py-8 px-4">
+          <div className="text-center py-12">
+            <p className="text-gray-500">Veuillez vous identifier pour accéder à ce projet</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (loading && !project) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavBar userName={userName} />
+        <NavBar userName={userName} isProjectPage={true} guestData={guestData}/>
         <main className="flex-1 container mx-auto py-8 px-4">
           <div className="text-center py-12">
             <p className="text-gray-500">Chargement du projet...</p>
@@ -196,7 +216,7 @@ export default function ProjectView() {
   if (!project) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavBar userName={userName} />
+        <NavBar userName={userName} isProjectPage={true} guestData={guestData}/>
         <main className="flex-1 container mx-auto py-8 px-4">
           <div className="text-center py-12">
             <p className="text-gray-500">Projet non trouvé</p>
@@ -215,7 +235,12 @@ export default function ProjectView() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <NavBar userName={userName} />
+      <NavBar 
+        userName={userName} 
+        isProjectPage={true} 
+        onGuestPrompt={promptGuestSelection} 
+        guestData={guestData}
+      />
 
       <main className="flex-1 container mx-auto py-8 px-4">
         {/* En-tête avec navigation */}
@@ -280,7 +305,7 @@ export default function ProjectView() {
         </Card>
       </main>
 
-      {/* Modal pour l'ajout d'un grain */}
+      {/* Modal for adding a grain */}
       {isGrainFormOpen && (
         <GrainForm
           projectId={projectId || ""}
@@ -289,12 +314,12 @@ export default function ProjectView() {
         />
       )}
 
-      {/* Modal pour l'inscription d'un invité */}
-      {isGuestFormOpen && (
-        <GuestForm
+      {/* Guest selection modal */}
+      {showGuestModal && (
+        <GuestSelectionModal
           projectId={projectId || ""}
-          onClose={() => setIsGuestFormOpen(false)}
-          onSubmit={handleGuestSubmit}
+          onClose={() => setShowGuestModal(false)}
+          onGuestSelected={setGuestSession}
         />
       )}
     </div>
