@@ -25,13 +25,14 @@ export default function CommentsList() {
     selectedAuthorId,
     setSelectedAuthorId,
     toggleFeedbackStatus,
+    updateFeedback,
+    deleteFeedback,
     fetchFeedbacks
   } = useProjectComments(projectId);
   const userName = user
   ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
   : "";
   
-  console.log(feedbacks);
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar userName={userName} />
@@ -76,6 +77,8 @@ export default function CommentsList() {
               feedbacks={feedbacks}
               toggleFeedbackStatus={toggleFeedbackStatus}
               formatTimecode={formatTimecode}
+              updateFeedback={updateFeedback}
+              deleteFeedback={deleteFeedback}
             />
           )}
         </div>
