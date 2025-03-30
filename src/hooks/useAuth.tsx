@@ -38,13 +38,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             navigate('/dashboard');
           }, 0);
         } else if (event === 'SIGNED_OUT') {
-          // Only redirect to auth page if NOT on a project view page or home page
-          if (!currentPath.startsWith('/project/') && currentPath !== '/') {
+          // Don't redirect when signing out - user stays on the same page
+          // Only redirect to auth page if on a protected route
+          if (currentPath === '/dashboard' || currentPath.includes('/project/') && currentPath.includes('/comments')) {
             setTimeout(() => {
               navigate('/auth');
             }, 0);
           }
-          // No redirection for project pages - user stays on the same page
+          // No redirection for public pages - user stays on the same page
         }
       }
     );
@@ -56,12 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
 
       // Don't redirect if we already have a session and are on a valid route
-      // or if we're on a project page (which is accessible without auth)
+      // or if we're on a public page (which is accessible without auth)
       if (!session && 
-          !currentPath.startsWith('/project/') && 
-          currentPath !== '/' && 
-          currentPath !== '/auth') {
-        // Only redirect to auth if not on home, auth, or project page
+          currentPath === '/dashboard' || 
+          (currentPath.includes('/project/') && currentPath.includes('/comments'))) {
+        // Only redirect to auth if on a protected route
         navigate('/auth');
       }
     });
@@ -123,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // No navigation after sign out - we'll let the auth state change handler manage any necessary redirects
   };
 
   return (
