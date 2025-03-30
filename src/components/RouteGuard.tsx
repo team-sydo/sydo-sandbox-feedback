@@ -29,11 +29,12 @@ export function PublicRoute() {
     );
   }
   
-  // Allow access to the home page even when logged in
-  if (window.location.pathname === '/') {
-    return <Outlet />;
+  // Allow access to public pages even when logged in
+  // For /auth, redirect to dashboard if already logged in
+  if (window.location.pathname === '/auth' && user) {
+    return <Navigate to="/dashboard" replace />;
   }
   
-  // For other public routes like /auth, redirect to dashboard if already logged in
-  return user ? <Navigate to="/dashboard" replace /> : <Outlet />;
+  // For all other public routes, allow access regardless of authentication status
+  return <Outlet />;
 }

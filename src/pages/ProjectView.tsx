@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Plus, MessageSquare, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GrainForm } from "@/components/GrainForm";
 import { GrainsList } from "@/components/GrainsList";
@@ -47,7 +48,7 @@ interface Guest {
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -60,11 +61,12 @@ export default function ProjectView() {
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    if (!authLoading && !user && !guestCreated) {
+    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté 
+    // et qu'aucun invité n'a été créé pour cette session
+    if (!user && !guestCreated) {
       setIsGuestFormOpen(true);
     }
-  }, [user, authLoading, guestCreated]);
+  }, [user, guestCreated]);
 
   // Charger les détails du projet
   useEffect(() => {
@@ -220,13 +222,19 @@ export default function ProjectView() {
       <main className="flex-1 container mx-auto py-8 px-4">
         {/* En-tête avec navigation */}
         <div className="mb-8">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Retour aux projets
-          </Link>
+          {user ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Retour aux projets
+            </Link>
+          ) : (
+            <span className="text-sm text-gray-500">
+              Bienvenue sur ce projet
+            </span>
+          )}
         </div>
 
         {/* Informations du projet */}
@@ -254,16 +262,18 @@ export default function ProjectView() {
               <CardTitle>Éléments à tester</CardTitle>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/project/${projectId}/comments`}>
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  Voir tous les retours
-                </Link>
-              </Button>
               {user && (
-                <Button size="sm" onClick={() => setIsGrainFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" /> Ajouter un élément
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/project/${projectId}/comments`}>
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      Voir tous les retours
+                    </Link>
+                  </Button>
+                  <Button size="sm" onClick={() => setIsGrainFormOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Ajouter un élément
+                  </Button>
+                </>
               )}
             </div>
           </CardHeader>

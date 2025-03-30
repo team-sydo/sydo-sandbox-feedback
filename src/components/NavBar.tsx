@@ -1,32 +1,61 @@
 
+import { useState } from "react";
 import { SydoLogo } from "./SydoLogo";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { LoginModal } from "./LoginModal";
 
 interface NavBarProps {
   userName: string;
 }
 
 export function NavBar({ userName }: NavBarProps) {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleAuthAction = () => {
+    if (user) {
+      signOut();
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
 
   return (
     <nav className="border-b py-4 px-6 flex justify-between items-center bg-white">
       <SydoLogo />
       <div className="flex items-center gap-4">
-        <div className="text-sm font-medium">
-          {userName}
-        </div>
+        {userName && (
+          <div className="text-sm font-medium">
+            {userName}
+          </div>
+        )}
         <Button 
           variant="ghost" 
-          size="icon" 
-          onClick={signOut}
-          title="Déconnexion"
+          size="sm"
+          onClick={handleAuthAction}
+          className="flex items-center gap-2"
+          title={user ? "Déconnexion" : "Connexion"}
         >
-          <LogOut className="h-5 w-5" />
+          {user ? (
+            <>
+              <LogOut className="h-4 w-4" />
+              <span>Déconnexion</span>
+            </>
+          ) : (
+            <>
+              <LogIn className="h-4 w-4" />
+              <span>Connexion</span>
+            </>
+          )}
         </Button>
       </div>
+      
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
     </nav>
   );
 }

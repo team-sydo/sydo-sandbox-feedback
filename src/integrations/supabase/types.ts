@@ -241,20 +241,26 @@ export type Database = {
       }
       users: {
         Row: {
+          device: Database["public"]["Enums"]["device_type"] | null
           id: string
           mail: string
+          navigateur: Database["public"]["Enums"]["browser_type"] | null
           nom: string
           prenom: string
         }
         Insert: {
+          device?: Database["public"]["Enums"]["device_type"] | null
           id: string
           mail: string
+          navigateur?: Database["public"]["Enums"]["browser_type"] | null
           nom: string
           prenom: string
         }
         Update: {
+          device?: Database["public"]["Enums"]["device_type"] | null
           id?: string
           mail?: string
+          navigateur?: Database["public"]["Enums"]["browser_type"] | null
           nom?: string
           prenom?: string
         }
@@ -268,7 +274,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      browser_type: "chrome" | "edge" | "firefox" | "safari" | "autre"
+      browser_type: "chrome" | "edge" | "firefox" | "safari" | "autre" | "arc"
       device_type: "mobile" | "ordinateur" | "tablette"
       grain_type: "web" | "video"
     }
