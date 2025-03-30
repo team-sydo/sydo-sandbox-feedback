@@ -1,5 +1,6 @@
 
 import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
 import { ArrowLeft } from "lucide-react";
