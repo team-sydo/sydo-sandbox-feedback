@@ -2,8 +2,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Guest } from "@/components/guest/GuestSelectionModal";
-import { User } from "@supabase/supabase-js";
 
 interface UserData {
   nom: string;
@@ -38,11 +36,7 @@ export interface Grain {
   title: string;
 }
 
-export function useProjectComments(
-  projectId: string | undefined,
-  user: User | null,
-  guestData: Guest | null
-) {
+export function useProjectComments(projectId: string | undefined) {
   const { toast } = useToast();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,7 +184,7 @@ export function useProjectComments(
               if (!tempAuthors.some(author => author.id === feedback.guest_id)) {
                 tempAuthors.push({
                   id: feedback.guest_id,
-                  name: `${guestData.prenom} ${guestData.nom} (Invité)`,
+                  name: `${guestData.prenom} ${guestData.nom}`,
                   type: "guest"
                 });
               }

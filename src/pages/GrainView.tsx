@@ -8,9 +8,8 @@ import { ArrowLeft, MessageCircle } from "lucide-react";
 import FeedbackForm from "@/components/GrainView/FeedbackForm";
 import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
-import { GuestSelectionModal } from "@/components/guest/GuestSelectionModal";
-import { useGuestSession } from "@/hooks/useGuestSession";
 
+// Types
 interface Grain {
   id: string;
   title: string;
@@ -38,20 +37,14 @@ export default function GrainView() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // États
   const [grain, setGrain] = useState<Grain | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState<number>(0);
 
-  const {
-    guestData,
-    showGuestModal,
-    setGuestSession,
-    promptGuestSelection,
-    setShowGuestModal
-  } = useGuestSession();
-
+  // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -61,6 +54,7 @@ export default function GrainView() {
       try {
         setLoading(true);
 
+        // Récupérer les détails du grain
         const { data: grainData, error: grainError } = await supabase
           .from("grains")
           .select(
@@ -78,14 +72,9 @@ export default function GrainView() {
 
         setGrain(grainData);
 
-        if (!user && !guestData) {
-          promptGuestSelection();
-        }
-
+        // Récupérer les feedbacks du grain pour l'utilisateur actuel
         if (user) {
           await fetchFeedbacks();
-        } else if (guestData) {
-          await fetchGuestFeedbacks();
         }
       } catch (error: any) {
         toast({
@@ -99,7 +88,7 @@ export default function GrainView() {
     };
 
     fetchGrainDetails();
-  }, [grainId, user, guestData, toast, promptGuestSelection]);
+  }, [grainId, user, toast]);
 
   const fetchFeedbacks = async () => {
     if (!grainId || !user) return;
@@ -110,25 +99,6 @@ export default function GrainView() {
         .select("*")
         .eq("grain_id", grainId)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (feedbacksError) throw feedbacksError;
-
-      setFeedbacks(feedbacksData || []);
-    } catch (error: any) {
-      console.error("Erreur lors du chargement des feedbacks:", error);
-    }
-  };
-
-  const fetchGuestFeedbacks = async () => {
-    if (!grainId || !guestData) return;
-
-    try {
-      const { data: feedbacksData, error: feedbacksError } = await supabase
-        .from("feedbacks")
-        .select("*")
-        .eq("grain_id", grainId)
-        .eq("guest_id", guestData.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
@@ -155,6 +125,7 @@ export default function GrainView() {
 
       if (error) throw error;
 
+      // Mettre à jour l'état local
       setFeedbacks((prev) =>
         prev.map((feedback) =>
           feedback.id === feedbackId
@@ -178,6 +149,7 @@ export default function GrainView() {
     }
   };
 
+  // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
@@ -185,11 +157,7 @@ export default function GrainView() {
   if (loading && !grain) {
     return (
       <div className="h-screen bg-gray-50 flex flex-col">
-        <NavBar 
-          userName={userName} 
-          isProjectPage={true} 
-          guestData={guestData}
-        />
+        <NavBar userName={userName} />
         <main className="flex-1 flex items-center justify-center">
           <p className="text-gray-500">Chargement...</p>
         </main>
@@ -200,11 +168,7 @@ export default function GrainView() {
   if (!grain) {
     return (
       <div className="h-screen bg-gray-50 flex flex-col">
-        <NavBar 
-          userName={userName} 
-          isProjectPage={true} 
-          guestData={guestData}
-        />
+        <NavBar userName={userName} />
         <main className="flex-1 flex items-center justify-center">
           <p className="text-gray-500">Élément non trouvé</p>
         </main>
@@ -214,15 +178,14 @@ export default function GrainView() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full bg-gray-50">
-      <NavBar 
-        userName={userName} 
-        isProjectPage={true} 
-        onGuestPrompt={promptGuestSelection} 
-        guestData={guestData}
-      />
+      <NavBar userName={userName} />
 
       <div className="flex flex-1 overflow-hidden relative">
+       
+
+        {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
           <header className="flex items-center justify-between px-4 bg-white border-b">
             <div className="flex items-center">
               <Link
@@ -248,6 +211,7 @@ export default function GrainView() {
             </button>
           </header>
 
+          {/* Contenu (iframe ou video) */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
             {grain?.type === "web" ? (
               <iframe
@@ -261,21 +225,21 @@ export default function GrainView() {
             )}
           </div>
           
-          <div>
-            {(user || guestData) && grain && (
+          {/* Formulaire de feedback */}
+          <div >
+            {user && grain && (
               <FeedbackForm
                 grainId={grain.id}
                 projectId={grain.project_id}
-                userId={user?.id || null}
-                guestId={guestData?.id || null}
+                userId={user.id}
                 currentTime={grain.type === "video" ? currentTime : null}
                 isVideoType={grain.type === "video"}
-                onFeedbackSubmitted={user ? fetchFeedbacks : fetchGuestFeedbacks}
+                onFeedbackSubmitted={fetchFeedbacks}
               />
             )}
           </div>
         </div>
-
+         {/* Sidebar pour les feedbacks */}
         <aside
           className={`fixed w-72 h-full bg-gray-50 border-l transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
@@ -289,14 +253,6 @@ export default function GrainView() {
           />
         </aside>
       </div>
-
-      {showGuestModal && (
-        <GuestSelectionModal
-          projectId={grain.project_id}
-          onClose={() => setShowGuestModal(false)}
-          onGuestSelected={setGuestSession}
-        />
-      )}
     </div>
   );
 }

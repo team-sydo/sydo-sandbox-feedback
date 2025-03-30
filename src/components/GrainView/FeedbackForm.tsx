@@ -1,113 +1,250 @@
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { formatTimecode } from "@/utils/formatting";
+import React, { useRef, useState } from 'react';
+import { Image, Send, Play, Pause } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import ImageAnnotationModal from './ImageAnnotationModal';
 
 interface FeedbackFormProps {
   grainId: string;
   projectId: string;
-  userId: string | null;
-  guestId?: string | null;
+  userId: string;
   currentTime: number | null;
   isVideoType: boolean;
   onFeedbackSubmitted: () => void;
 }
 
-export default function FeedbackForm({
+const FeedbackForm: React.FC<FeedbackFormProps> = ({
   grainId,
   projectId,
   userId,
-  guestId = null,
   currentTime,
   isVideoType,
-  onFeedbackSubmitted,
-}: FeedbackFormProps) {
-  const [feedbackContent, setFeedbackContent] = useState("");
+  onFeedbackSubmitted
+}) => {
+  const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setContent(e.target.value);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Format invalide",
+          description: "Veuillez sélectionner un fichier image",
+          variant: "destructive"
+        });
+        return;
+      }
+      setScreenshotFile(file);
+      setIsAnnotationModalOpen(true);
+    }
+  };
+
+  const handleCaptureClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-
-    if (!feedbackContent.trim()) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez saisir un commentaire",
-        variant: "destructive",
-      });
-      return;
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Format invalide",
+          description: "Veuillez sélectionner un fichier image",
+          variant: "destructive"
+        });
+        return;
+      }
+      setScreenshotFile(file);
+      setIsAnnotationModalOpen(true);
     }
+  };
 
-    if (!userId && !guestId) {
-      toast({
-        title: "Erreur",
-        description: "Vous devez être connecté ou avoir un profil invité pour laisser un commentaire",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
+  const handleTogglePlayPause = () => {
+    const newPlayState = !isVideoPlaying;
+    
+    const event = new CustomEvent('toggle-video-playback', {
+      detail: {
+        isPlaying: newPlayState
+      }
+    });
+    document.dispatchEvent(event);
+
+    setIsVideoPlaying(newPlayState);
+  };
+
+  React.useEffect(() => {
+    const handlePlayStateChange = (event: CustomEvent) => {
+      setIsVideoPlaying(event.detail.isPlaying);
+    };
+    document.addEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
+    return () => {
+      document.removeEventListener('video-play-state-changed', handlePlayStateChange as EventListener);
+    };
+  }, []);
+
+  const handleAnnotationSubmit = async (annotationContent: string, annotatedImageUrl: string) => {
+    if (!annotationContent.trim()) return;
     try {
       setSubmitting(true);
 
-      const feedbackData = {
+      const timecode = isVideoType ? currentTime : null;
+
+      const base64Response = await fetch(annotatedImageUrl);
+      const blob = await base64Response.blob();
+      const annotatedFile = new File([blob], `annotation-${Date.now()}.png`, {
+        type: 'image/png'
+      });
+
+      const fileExt = 'png';
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const {
+        error: uploadError
+      } = await supabase.storage.from('feedback-screenshots').upload(filePath, annotatedFile, {
+        contentType: 'image/png'
+      });
+      if (uploadError) throw uploadError;
+
+      const {
+        data: urlData
+      } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
+      const screenshotUrl = urlData.publicUrl;
+
+      const {
+        error
+      } = await supabase.from('feedbacks').insert({
         grain_id: grainId,
         project_id: projectId,
+        content: annotationContent,
+        timecode,
+        screenshot_url: screenshotUrl,
         user_id: userId,
-        guest_id: guestId,
-        content: feedbackContent,
-        timecode: isVideoType ? currentTime : null,
-      };
-
-      const { error } = await supabase.from("feedbacks").insert(feedbackData);
-
+        done: false
+      });
       if (error) throw error;
 
-      setFeedbackContent("");
-      onFeedbackSubmitted();
-
+      setContent('');
+      setScreenshotFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       toast({
-        title: "Succès",
-        description: "Votre commentaire a été envoyé",
+        title: "Commentaire envoyé",
+        description: "Votre commentaire avec annotation a été enregistré avec succès"
       });
+
+      onFeedbackSubmitted();
     } catch (error: any) {
-      console.error("Erreur lors de l'envoi du feedback:", error);
       toast({
         title: "Erreur",
-        description:
-          error.message || "Impossible d'envoyer votre commentaire",
-        variant: "destructive",
+        description: error.message || "Impossible d'ajouter le commentaire",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="border-t bg-white p-4">
-      <form onSubmit={handleSubmit} className="flex items-start gap-2">
-        <div className="flex-1">
-          <Textarea
-            value={feedbackContent}
-            onChange={(e) => setFeedbackContent(e.target.value)}
-            placeholder="Ajouter un commentaire..."
-            className="min-h-20 resize-none"
-          />
-          {isVideoType && currentTime !== null && (
-            <div className="text-xs text-gray-500 mt-1">
-              Timecode: {formatTimecode(currentTime)}
-            </div>
-          )}
-        </div>
-        <Button type="submit" disabled={submitting}>
-          <MessageSquare className="h-4 w-4 mr-2" />
-          {submitting ? "Envoi..." : "Envoyer"}
-        </Button>
-      </form>
-    </div>
-  );
-}
+  const submitFeedback = async () => {
+    if (!content.trim()) return;
+    try {
+      setSubmitting(true);
+
+      const timecode = isVideoType ? currentTime : null;
+
+      let screenshotUrl = null;
+      if (screenshotFile) {
+        const fileExt = screenshotFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const {
+          error: uploadError
+        } = await supabase.storage.from('feedback-screenshots').upload(filePath, screenshotFile, {
+          contentType: screenshotFile.type
+        });
+        if (uploadError) throw uploadError;
+
+        const {
+          data: urlData
+        } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
+        screenshotUrl = urlData.publicUrl;
+      }
+
+      const {
+        error
+      } = await supabase.from('feedbacks').insert({
+        grain_id: grainId,
+        project_id: projectId,
+        content,
+        timecode,
+        screenshot_url: screenshotUrl,
+        user_id: userId,
+        done: false
+      });
+      if (error) throw error;
+
+      setContent('');
+      setScreenshotFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      toast({
+        title: "Commentaire envoyé",
+        description: "Votre commentaire a été enregistré avec succès"
+      });
+
+      onFeedbackSubmitted();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'ajouter le commentaire",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return <div ref={dropZoneRef} onDrop={handleDrop} onDragOver={handleDragOver} className="flex items-center px-4 py-3 gap-2 border-t bg-white">
+      {isVideoType && <Button size="sm" onClick={handleTogglePlayPause} className="w-16 bg-blue-500 hover:bg-blue-900">
+          {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </Button>}
+
+      <input type="text" placeholder="Ajouter un commentaire..." value={content} onChange={handleContentChange} className="flex-1 py-2 px-3 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary" />
+      
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      
+      <Button variant="outline" size="sm" onClick={handleCaptureClick} disabled={submitting} className="text-gray-600 whitespace-nowrap">
+        <Image className="h-4 w-4 mr-2" />
+        Capture
+      </Button>
+      
+      <Button size="sm" onClick={submitFeedback} disabled={!content.trim() || submitting} className="bg-blue-500 hover:bg-blue-600">
+        <Send className="h-4 w-4" />
+      </Button>
+      
+      <ImageAnnotationModal isOpen={isAnnotationModalOpen} onClose={() => setIsAnnotationModalOpen(false)} imageFile={screenshotFile} onSubmit={handleAnnotationSubmit} timecode={currentTime} />
+    </div>;
+};
+
+export default FeedbackForm;

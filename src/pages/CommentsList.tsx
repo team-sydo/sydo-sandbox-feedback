@@ -1,6 +1,5 @@
 
 import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
 import { ArrowLeft } from "lucide-react";
@@ -9,25 +8,12 @@ import { useProjectComments } from "@/hooks/useProjectComments";
 import { CommentsFilters } from "@/components/comments/CommentsFilters";
 import { CommentsTable } from "@/components/comments/CommentsTable";
 import { formatTimecode } from "@/utils/formatting";
-import { GuestSelectionModal } from "@/components/guest/GuestSelectionModal";
-import { useGuestSession } from "@/hooks/useGuestSession";
 
 export default function CommentsList() {
   const { projectId } = useParams();
   const { user } = useAuth();
-  
-  // Guest session management
   const {
-    guestData,
-    showGuestModal,
-    setGuestSession,
-    promptGuestSelection,
-    setShowGuestModal,
-    isLoading: guestLoading
-  } = useGuestSession();
-  
-  const {
-    loading: commentsLoading,
+    loading,
     projectTitle,
     grains,
     feedbacks,
@@ -40,55 +26,15 @@ export default function CommentsList() {
     setSelectedAuthorId,
     toggleFeedbackStatus,
     fetchFeedbacks
-  } = useProjectComments(projectId, user, guestData);
-
-  // Check if needs guest modal on component mount
-  useEffect(() => {
-    // Only prompt for guest selection if:
-    // 1. Not currently loading guest data
-    // 2. User is not logged in
-    // 3. No guest data exists
-    if (!guestLoading && !user && !guestData) {
-      promptGuestSelection();
-    }
-  }, [user, guestData, promptGuestSelection, guestLoading]);
+  } = useProjectComments(projectId);
 
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
 
-  // Loading state while getting guest data
-  const isLoading = guestLoading || commentsLoading;
-  const showGuestSelectionModal = showGuestModal && projectId;
-  const hasUserOrGuest = !!user || !!guestData;
-
-  // Show loading indicator while initializing
-  if (isLoading && !hasUserOrGuest) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <NavBar 
-          userName={userName} 
-          isProjectPage={true} 
-          onGuestPrompt={promptGuestSelection}
-          guestData={guestData}
-        />
-        <main className="container mx-auto py-8 px-4">
-          <div className="text-center py-12">
-            <p className="text-gray-500">Chargement du projet...</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar 
-        userName={userName} 
-        isProjectPage={true} 
-        onGuestPrompt={promptGuestSelection} 
-        guestData={guestData}
-      />
+      <NavBar userName={userName} />
 
       <main className="container mx-auto py-8 px-4">
         <div className="mb-6">
@@ -115,7 +61,7 @@ export default function CommentsList() {
             onRefresh={fetchFeedbacks}
           />
 
-          {commentsLoading ? (
+          {loading ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Chargement des commentaires...</p>
             </div>
@@ -134,15 +80,6 @@ export default function CommentsList() {
           )}
         </div>
       </main>
-
-      {/* Guest selection modal */}
-      {showGuestSelectionModal && (
-        <GuestSelectionModal
-          projectId={projectId}
-          onClose={() => setShowGuestModal(false)}
-          onGuestSelected={setGuestSession}
-        />
-      )}
     </div>
   );
 }

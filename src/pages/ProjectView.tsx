@@ -12,12 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Plus, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, MessageSquare, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GrainForm } from "@/components/GrainForm";
 import { GrainsList } from "@/components/GrainsList";
-import { GuestSelectionModal } from "@/components/guest/GuestSelectionModal";
-import { useGuestSession } from "@/hooks/useGuestSession";
+import { GuestForm } from "@/components/GuestForm";
 
 interface Project {
   id: string;
@@ -55,76 +54,76 @@ export default function ProjectView() {
   const [project, setProject] = useState<Project | null>(null);
   const [grains, setGrains] = useState<Grain[]>([]);
   const [isGrainFormOpen, setIsGrainFormOpen] = useState(false);
+  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  
-  // Guest session management
-  const {
-    guestData,
-    showGuestModal,
-    setGuestSession,
-    promptGuestSelection,
-    setShowGuestModal
-  } = useGuestSession();
+  const [guestCreated, setGuestCreated] = useState(false);
 
-  // Check if user is authenticated, if not, show guest modal
+  // Vérifier si l'utilisateur est connecté
   useEffect(() => {
-    if (!authLoading && !user && !guestData) {
-      promptGuestSelection();
+    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
+    if (!authLoading && !user && !guestCreated) {
+      setIsGuestFormOpen(true);
     }
-  }, [user, authLoading, guestData, promptGuestSelection]);
+  }, [user, authLoading, guestCreated]);
 
-  const fetchProjectDetails = async () => {
-    if (!projectId) return;
+  // Charger les détails du projet
+  useEffect(() => {
+    const fetchProjectDetails = async () => {
+      if (!projectId) return;
 
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      // Récupérer les détails du projet
-      const { data: projectData, error: projectError } = await supabase
-        .from("projects")
-        .select(
-          `
+        // Récupérer les détails du projet
+        const { data: projectData, error: projectError } = await supabase
+          .from("projects")
+          .select(
+            `
             *,
             clients:client_id (
               id,
               nom
             )
           `
-        )
-        .eq("id", projectId)
-        .single();
+          )
+          .eq("id", projectId)
+          .single();
 
-      if (projectError) throw projectError;
+        if (projectError) throw projectError;
 
-      if (projectData) {
-        setProject({
-          ...projectData,
-          client_name: projectData.clients ? projectData.clients.nom : null,
+        if (projectData) {
+          setProject({
+            ...projectData,
+            client_name: projectData.clients ? projectData.clients.nom : null,
+          });
+        }
+
+        // Récupérer les grains du projet
+        const { data: grainsData, error: grainsError } = await supabase
+          .from("grains")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (grainsError) throw grainsError;
+
+        setGrains(grainsData || []);
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description:
+            error.message || "Impossible de charger les détails du projet",
+          variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Récupérer les grains du projet
-      const { data: grainsData, error: grainsError } = await supabase
-        .from("grains")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: false });
+    fetchProjectDetails();
+  }, [projectId, toast]);
 
-      if (grainsError) throw grainsError;
-
-      setGrains(grainsData || []);
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description:
-          error.message || "Impossible de charger les détails du projet",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Gérer l'ajout d'un nouveau grain
   const handleAddGrain = (newGrain: Grain) => {
     setGrains((prev) => [newGrain, ...prev]);
     setIsGrainFormOpen(false);
@@ -135,6 +134,7 @@ export default function ProjectView() {
     });
   };
 
+  // Gérer la mise à jour du statut d'un grain
   const handleGrainStatusToggle = async (grainId: string, done: boolean) => {
     try {
       const { error } = await supabase
@@ -164,46 +164,26 @@ export default function ProjectView() {
     }
   };
 
+  // Gérer la soumission du formulaire invité
+  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+    setGuestCreated(true);
+    setIsGuestFormOpen(false);
+
+    toast({
+      title: "Bienvenue !",
+      description: `Merci de votre participation, ${guest.prenom}`,
+    });
+  };
+
   // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
 
-  // Don't render anything until we have either a user or guest session (unless loading)
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavBar userName={userName} isProjectPage={true} />
-        <main className="flex-1 container mx-auto py-8 px-4">
-          <div className="text-center py-12">
-            <p className="text-gray-500">Chargement...</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!user && !guestData && !showGuestModal) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavBar 
-          userName={userName} 
-          isProjectPage={true} 
-          onGuestPrompt={promptGuestSelection}
-        />
-        <main className="flex-1 container mx-auto py-8 px-4">
-          <div className="text-center py-12">
-            <p className="text-gray-500">Veuillez vous identifier pour accéder à ce projet</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   if (loading && !project) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavBar userName={userName} isProjectPage={true} guestData={guestData}/>
+        <NavBar userName={userName} />
         <main className="flex-1 container mx-auto py-8 px-4">
           <div className="text-center py-12">
             <p className="text-gray-500">Chargement du projet...</p>
@@ -216,7 +196,7 @@ export default function ProjectView() {
   if (!project) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <NavBar userName={userName} isProjectPage={true} guestData={guestData}/>
+        <NavBar userName={userName} />
         <main className="flex-1 container mx-auto py-8 px-4">
           <div className="text-center py-12">
             <p className="text-gray-500">Projet non trouvé</p>
@@ -235,12 +215,7 @@ export default function ProjectView() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <NavBar 
-        userName={userName} 
-        isProjectPage={true} 
-        onGuestPrompt={promptGuestSelection} 
-        guestData={guestData}
-      />
+      <NavBar userName={userName} />
 
       <main className="flex-1 container mx-auto py-8 px-4">
         {/* En-tête avec navigation */}
@@ -256,20 +231,26 @@ export default function ProjectView() {
 
         {/* Informations du projet */}
         <div className="mb-8">
-          <div className="flex items-center">
-            <h1 className="text-3xl font-bold mr-2">{project.title}</h1>
-            <Badge variant={project.active ? "success" : "destructive"}>
-              {project.active ? "Actif" : "Archivé"}
-            </Badge>
-          </div>
+          <h1 className="text-3xl font-bold">{project.title}</h1>
           {project.client_name && (
-            <div className="text-xs text-gray-600 mt-1">
-              {project.client_name}
+            <div className="text-lg text-gray-600 mt-1">
+              Client : {project.client_name}
             </div>
           )}
           {project.description && (
             <p className="mt-2 text-gray-600">{project.description}</p>
           )}
+          <div className="mt-2">
+            <Badge variant={project.active ? "success" : "destructive"}>
+              {project.active ? "Actif" : "Archivé"}
+            </Badge>
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/project/${projectId}/comments`}>
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Voir les retours du projet
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Section des grains */}
@@ -281,19 +262,11 @@ export default function ProjectView() {
                 Liste des éléments web et vidéo à tester pour ce projet
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" asChild>
-                <Link to={`/project/${projectId}/comments`}>
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  Voir tous les retours
-                </Link>
+            {user && (
+              <Button onClick={() => setIsGrainFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Ajouter un élément
               </Button>
-              {user && (
-                <Button onClick={() => setIsGrainFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" /> Ajouter un élément
-                </Button>
-              )}
-            </div>
+            )}
           </CardHeader>
           <CardContent>
             <GrainsList
@@ -305,7 +278,7 @@ export default function ProjectView() {
         </Card>
       </main>
 
-      {/* Modal for adding a grain */}
+      {/* Modal pour l'ajout d'un grain */}
       {isGrainFormOpen && (
         <GrainForm
           projectId={projectId || ""}
@@ -314,12 +287,12 @@ export default function ProjectView() {
         />
       )}
 
-      {/* Guest selection modal */}
-      {showGuestModal && (
-        <GuestSelectionModal
+      {/* Modal pour l'inscription d'un invité */}
+      {isGuestFormOpen && (
+        <GuestForm
           projectId={projectId || ""}
-          onClose={() => setShowGuestModal(false)}
-          onGuestSelected={setGuestSession}
+          onClose={() => setIsGuestFormOpen(false)}
+          onSubmit={handleGuestSubmit}
         />
       )}
     </div>

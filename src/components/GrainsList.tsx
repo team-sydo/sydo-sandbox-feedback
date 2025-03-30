@@ -39,14 +39,6 @@ export function GrainsList({ grains, onStatusToggle, isUserLoggedIn }: GrainsLis
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-medium">{grain.title}</h3>
-                <a 
-                href={grain.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-sm text-blue-500 hover:underline inline-flex items-center gap-1"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
                 <Badge variant={grain.type === 'web' ? "default" : "secondary"}>
                   {grain.type === 'web' ? 'Site' : 'Vidéo'}
                 </Badge>
@@ -54,8 +46,21 @@ export function GrainsList({ grains, onStatusToggle, isUserLoggedIn }: GrainsLis
                   <Badge variant="success">Terminé</Badge>
                 )}
               </div>
-              
-             
+              <a 
+                href={grain.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-sm text-blue-500 hover:underline inline-flex items-center gap-1"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Ouvrir le lien
+              </a>
+              <Button variant="outline" size="sm" asChild>
+              <Link to={`/project/${grain.project_id}/comments`}>
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Voir les retours
+              </Link>
+            </Button>
             </div>
             <div className="flex gap-2">
               <Link to={`/grain/${grain.id}`}>
@@ -64,12 +69,6 @@ export function GrainsList({ grains, onStatusToggle, isUserLoggedIn }: GrainsLis
                   Tester
                 </Button>
               </Link>
-              <Button variant="outline" size="sm" asChild>
-              <Link to={`/project/${grain.project_id}/comments`}>
-                <MessageSquare className="h-4 w-4 mr-1" />
-                Retours
-              </Link>
-            </Button>
               {isUserLoggedIn && (
                 <Button 
                   size="sm" 
