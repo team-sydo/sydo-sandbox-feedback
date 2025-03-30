@@ -128,7 +128,6 @@ export default function ProjectView() {
         setLoading(false);
       }
     };
-
     fetchProjectDetails();
   }, [projectId, toast]);
 
@@ -237,15 +236,7 @@ export default function ProjectView() {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Retour aux projets
             </Link>
-          ) : (
-            <Link
-              to="/"
-              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Retour aux projets
-            </Link>
-          )}
+          ) : ""}
         </div>
 
         {/* Informations du projet */}
