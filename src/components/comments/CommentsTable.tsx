@@ -24,12 +24,20 @@ export function CommentsTable({
 }: CommentsTableProps) {
   const getCommenterName = (feedback: Feedback) => {
     if (feedback.user && feedback.user.prenom && feedback.user.nom) {
-      return `${feedback.user.prenom} ${feedback.user.nom} (User)`;
+      return `${feedback.user.prenom} ${feedback.user.nom}`;
     } else if (feedback.guest && feedback.guest.prenom && feedback.guest.nom) {
-      return `${feedback.guest.prenom} ${feedback.guest.nom} (Guest)`;
+      return `${feedback.guest.prenom} ${feedback.guest.nom}`;
     }
     return "Anonyme";
   };
+  // const getCommenterData = (feedback: Feedback) => {
+  //   if (feedback.user && feedback.user.device && feedback.user.navigateur) {
+  //     return `${feedback.user.prenom} ${feedback.user.nom} (User)`;
+  //   } else if (feedback.guest && feedback.guest.prenom && feedback.guest.nom) {
+  //     return `${feedback.guest.prenom} ${feedback.guest.nom} (Guest)`;
+  //   }
+  //   return "Anonyme";
+  // };
 
   const getGrainTitle = (feedback: Feedback) => {
     return feedback.grain?.title || "Inconnu";
@@ -41,8 +49,8 @@ export function CommentsTable({
         <TableHeader>
           <TableRow>
             <TableHead className="w-12">#</TableHead>
-            <TableHead>Nom du commentateur</TableHead>
             <TableHead>Grain</TableHead>
+            <TableHead>Nom du commentateur</TableHead>
             <TableHead>Commentaire</TableHead>
             <TableHead>Capture</TableHead>
             <TableHead>Time Code</TableHead>
@@ -53,9 +61,9 @@ export function CommentsTable({
           {feedbacks.map((feedback, index) => (
             <TableRow key={feedback.id}>
               <TableCell>{index + 1}</TableCell>
-              <TableCell>{getCommenterName(feedback)}</TableCell>
               <TableCell>{getGrainTitle(feedback)}</TableCell>
-              <TableCell>{feedback.content}</TableCell>
+              <TableCell>{getCommenterName(feedback)}</TableCell>
+              <TableCell><p className="h-24 overflow-scroll">{feedback.content}</p></TableCell>
               <TableCell>
                 {feedback.screenshot_url ? (
                   <a

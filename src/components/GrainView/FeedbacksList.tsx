@@ -65,7 +65,7 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
               </div>
             )}
             
-            <p className="mb-2">{feedback.content}</p>
+            <p className="mb-2 max-h-24 overflow-scroll">{feedback.content}</p>
             
             {feedback.screenshot_url && (
               <div className="mt-2 mb-3">

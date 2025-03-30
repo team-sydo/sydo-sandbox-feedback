@@ -47,7 +47,7 @@ export function ProjectCard({
             <div className="flex items-center">
               <FileText className="h-5 w-5 text-blue-500 mr-1" />
               <span className="text-sm">
-                {sites + videos} {sites > 1 ? "grains" : "grain"}
+                {sites + videos} {sites + videos > 1 ? "grains" : "grain"}
               </span>
             </div>
             <Button variant="outline" size="sm" asChild>

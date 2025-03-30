@@ -27,11 +27,11 @@ export default function CommentsList() {
     toggleFeedbackStatus,
     fetchFeedbacks
   } = useProjectComments(projectId);
-
   const userName = user
-    ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-    : "";
-
+  ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
+  : "";
+  
+  console.log(feedbacks);
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar userName={userName} />

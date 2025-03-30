@@ -87,15 +87,30 @@ export function CommentsFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les auteurs</SelectItem>
+              {/* <SelectItem value="users">Tous les utilisateurs</SelectItem> */}
               {authors.map((author) => (
                 <SelectItem key={author.id} value={author.id}>
-                  {author.name} ({author.type === "user" ? "Utilisateur" : "Invité"})
+                  {author.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       </div>
+{/* 
+      <SelectContent>
+              <SelectItem value="all">Tous les auteurs</SelectItem>
+              <SelectItem value="users">Tous les utilisateurs</SelectItem>
+              {authors
+                .filter((author) => author.type === "user")
+                .map((author) => (
+                  <SelectItem key={author.id} value={author.id}>
+                    {author.name}
+                  </SelectItem>
+                ))}
+            </SelectContent> */}
+
+
 
       <Button variant="outline" onClick={onRefresh}>
         <Filter className="h-4 w-4 mr-2" />
