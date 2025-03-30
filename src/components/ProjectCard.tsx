@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -72,7 +71,9 @@ export function ProjectCard({
             </Badge>
           </div>
           <p className="text-gray-600 text-sm h-10 overflow-hidden">{client}</p>
-          <p className="text-gray-600 text-sm h-10 overflow-hidden">{description}</p>
+          <p className="text-gray-600 text-sm h-10 overflow-hidden">
+            {description}
+          </p>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="flex items-center justify-between space-x-4">
@@ -82,20 +83,22 @@ export function ProjectCard({
                 {sites + videos} {sites + videos > 1 ? "grains" : "grain"}
               </span>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/project/${id}/comments`}>
-                <MessageSquare className="h-4 w-4 mr-1" />
-                Voir les retours
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/project/${id}/comments`}>
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  Retours
+                </Link>
+              </Button>
+              {sites + videos === 0 ? 
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-1" />
+              </Button> : null}
+            </div>
           </div>
         </CardContent>
-        <CardFooter className="bg-gray-50 justify-end gap-2">
-          <Button variant="destructive" size="sm" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 mr-1" />
-            Supprimer
-          </Button>
-          {/* <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+        {/* <CardFooter className="bg-gray-50 justify-end gap-2">
+          <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
             <AlertDialogTrigger asChild onClick={handleDeleteClick}>
               <Button variant="destructive" size="sm">
                 <Trash2 className="h-4 w-4 mr-1" />
@@ -115,8 +118,8 @@ export function ProjectCard({
                 <AlertDialogAction onClick={handleDelete}>Supprimer</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog> */}
-        </CardFooter>
+          </AlertDialog>
+        </CardFooter> */}
       </Card>
     </Link>
   );
