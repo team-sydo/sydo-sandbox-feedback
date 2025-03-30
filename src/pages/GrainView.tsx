@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,15 +32,6 @@ interface Feedback {
   created_at: string;
 }
 
-interface Guest {
-  id: string;
-  prenom: string;
-  nom: string;
-  device: string;
-  navigateur: string;
-  project_id: string;
-}
-
 export default function GrainView() {
   const { grainId } = useParams<{ grainId: string }>();
   const { user } = useAuth();
@@ -53,23 +43,9 @@ export default function GrainView() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
-  const [guest, setGuest] = useState<Guest | null>(null);
 
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Check for guest in localStorage
-  useEffect(() => {
-    const storedGuest = localStorage.getItem('guest');
-    if (storedGuest) {
-      try {
-        setGuest(JSON.parse(storedGuest));
-      } catch (err) {
-        console.error("Error parsing guest from localStorage:", err);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     const fetchGrainDetails = async () => {
@@ -77,7 +53,6 @@ export default function GrainView() {
 
       try {
         setLoading(true);
-        setError(null);
 
         // Récupérer les détails du grain
         const { data: grainData, error: grainError } = await supabase
@@ -91,22 +66,17 @@ export default function GrainView() {
           `
           )
           .eq("id", grainId)
-          .maybeSingle();
+          .single();
 
         if (grainError) throw grainError;
 
-        if (!grainData) {
-          setError("Élément de test non trouvé");
-          setGrain(null);
-        } else {
-          setGrain(grainData);
-        }
+        setGrain(grainData);
 
-        // Récupérer les feedbacks du grain
-        await fetchFeedbacks();
+        // Récupérer les feedbacks du grain pour l'utilisateur actuel
+        if (user) {
+          await fetchFeedbacks();
+        }
       } catch (error: any) {
-        console.error("Error fetching grain details:", error);
-        setError(error.message || "Une erreur s'est produite");
         toast({
           title: "Erreur",
           description: error.message || "Impossible de charger les détails",
@@ -118,31 +88,17 @@ export default function GrainView() {
     };
 
     fetchGrainDetails();
-  }, [grainId, toast]);
+  }, [grainId, user, toast]);
 
   const fetchFeedbacks = async () => {
-    if (!grainId) return;
+    if (!grainId || !user) return;
 
     try {
-      // Fetch feedbacks based on user authentication status
-      let query = supabase
+      const { data: feedbacksData, error: feedbacksError } = await supabase
         .from("feedbacks")
         .select("*")
-        .eq("grain_id", grainId);
-
-      if (user) {
-        // If user is authenticated, fetch their feedbacks
-        query = query.eq("user_id", user.id);
-      } else if (guest) {
-        // If guest info is available, fetch their feedbacks
-        query = query.eq("guest_id", guest.id);
-      } else {
-        // If neither user nor guest, return empty array
-        setFeedbacks([]);
-        return;
-      }
-
-      const { data: feedbacksData, error: feedbacksError } = await query
+        .eq("grain_id", grainId)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
@@ -196,8 +152,6 @@ export default function GrainView() {
   // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-    : guest
-    ? `${guest.prenom} ${guest.nom} (Invité)`
     : "";
 
   if (loading && !grain) {
@@ -211,19 +165,12 @@ export default function GrainView() {
     );
   }
 
-  if (!grain || error) {
+  if (!grain) {
     return (
       <div className="h-screen bg-gray-50 flex flex-col">
         <NavBar userName={userName} />
-        <main className="flex-1 flex items-center justify-center flex-col">
-          <p className="text-gray-500 mb-4">Élément non trouvé</p>
-          <Link
-            to="/"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 bg-white px-4 py-2 rounded border"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Retour à l'accueil
-          </Link>
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">Élément non trouvé</p>
         </main>
       </div>
     );
@@ -234,6 +181,8 @@ export default function GrainView() {
       <NavBar userName={userName} />
 
       <div className="flex flex-1 overflow-hidden relative">
+       
+
         {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
@@ -277,13 +226,12 @@ export default function GrainView() {
           </div>
           
           {/* Formulaire de feedback */}
-          <div>
-            {grain && (
+          <div >
+            {user && grain && (
               <FeedbackForm
                 grainId={grain.id}
                 projectId={grain.project_id}
-                userId={user?.id}
-                guestId={!user ? guest?.id : undefined}
+                userId={user.id}
                 currentTime={grain.type === "video" ? currentTime : null}
                 isVideoType={grain.type === "video"}
                 onFeedbackSubmitted={fetchFeedbacks}
@@ -291,7 +239,7 @@ export default function GrainView() {
             )}
           </div>
         </div>
-        {/* Sidebar pour les feedbacks */}
+         {/* Sidebar pour les feedbacks */}
         <aside
           className={`fixed w-72 h-full bg-gray-50 border-l transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
