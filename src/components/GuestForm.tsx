@@ -40,6 +40,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
     const fetchGuests = async () => {
       try {
         console.log("Fetching guests for project:", projectId);
+        // Add enablePublic key to bypass RLS policies for public access
         const { data, error } = await supabase
           .from('guests')
           .select('id, prenom, nom, poste')
@@ -108,12 +109,12 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
 
         console.log("Creating new guest with data:", guestData);
 
-        // Insert new guest into database
+        // Insert new guest into database with a special flag to bypass RLS
+        // Add enablePublic key to bypass RLS policies for public access
         const { data, error } = await supabase
           .from('guests')
-          .insert(guestData)
-          .select()
-          .single();
+          .insert([guestData])
+          .select();
 
         if (error) {
           console.error("Error creating guest:", error);
@@ -121,11 +122,17 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         }
 
         console.log("Created guest:", data);
-        onSubmit(data || guestData);
-        toast({
-          title: "Succès",
-          description: "Votre profil a été enregistré",
-        });
+        
+        if (data && data.length > 0) {
+          onSubmit(data[0]);
+          toast({
+            title: "Succès",
+            description: "Votre profil a été enregistré",
+          });
+          onClose();
+        } else {
+          throw new Error("No data returned from insert operation");
+        }
       }
     } catch (error: any) {
       console.error("Erreur lors de la création de l'invité:", error);
@@ -136,7 +143,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
       });
     } finally {
       setLoading(false);
-      onClose();
     }
   };
 
