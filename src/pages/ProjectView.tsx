@@ -246,7 +246,6 @@ export default function ProjectView() {
             <Badge variant={project.active ? "success" : "destructive"}>
               {project.active ? "Actif" : "Archivé"}
             </Badge>
-            
           </div>
           {project.client_name && (
             <div className="text-lg text-gray-600 mt-1">
