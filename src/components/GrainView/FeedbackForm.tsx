@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageAnnotationModal } from "./ImageAnnotationModal";
+import ImageAnnotationModal from "./ImageAnnotationModal";  // Changed from named import to default import
 import html2canvas from "html2canvas";
 import { Camera, Send } from "lucide-react";
 
