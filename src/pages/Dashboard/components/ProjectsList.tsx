@@ -5,9 +5,10 @@ import { Project } from "../types";
 export interface ProjectsListProps {
   projects: Project[];
   loading: boolean;
+  onDeleteProject?: (id: string) => void;
 }
 
-export function ProjectsList({ projects = [], loading }: ProjectsListProps) {
+export function ProjectsList({ projects = [], loading, onDeleteProject }: ProjectsListProps) {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -39,6 +40,7 @@ export function ProjectsList({ projects = [], loading }: ProjectsListProps) {
           sites={project.sites || 0}
           videos={project.videos || 0}
           status={project.active ? "actif" : "archivé"}
+          onDelete={onDeleteProject}
         />
       ))}
     </div>
