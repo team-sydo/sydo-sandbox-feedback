@@ -15,7 +15,6 @@ import { useGuestSession } from "@/hooks/useGuestSession";
 export default function CommentsList() {
   const { projectId } = useParams();
   const { user } = useAuth();
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Guest session management
   const {
@@ -23,11 +22,12 @@ export default function CommentsList() {
     showGuestModal,
     setGuestSession,
     promptGuestSelection,
-    setShowGuestModal
+    setShowGuestModal,
+    isLoading: guestLoading
   } = useGuestSession();
   
   const {
-    loading,
+    loading: commentsLoading,
     projectTitle,
     grains,
     feedbacks,
@@ -44,25 +44,33 @@ export default function CommentsList() {
 
   // Check if needs guest modal on component mount
   useEffect(() => {
-    if (!user && !guestData) {
+    // Only prompt for guest selection if:
+    // 1. Not currently loading guest data
+    // 2. User is not logged in
+    // 3. No guest data exists
+    if (!guestLoading && !user && !guestData) {
       promptGuestSelection();
-    } else {
-      setIsInitialized(true);
     }
-  }, [user, guestData, promptGuestSelection]);
+  }, [user, guestData, promptGuestSelection, guestLoading]);
 
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
 
-  // If we're still initializing and there's no user or guest data, show loading indicator
-  if (!isInitialized && !user && !guestData) {
+  // Loading state while getting guest data
+  const isLoading = guestLoading || commentsLoading;
+  const showGuestSelectionModal = showGuestModal && projectId;
+  const hasUserOrGuest = !!user || !!guestData;
+
+  // Show loading indicator while initializing
+  if (isLoading && !hasUserOrGuest) {
     return (
       <div className="min-h-screen bg-gray-50">
         <NavBar 
           userName={userName} 
           isProjectPage={true} 
           onGuestPrompt={promptGuestSelection}
+          guestData={guestData}
         />
         <main className="container mx-auto py-8 px-4">
           <div className="text-center py-12">
@@ -107,7 +115,7 @@ export default function CommentsList() {
             onRefresh={fetchFeedbacks}
           />
 
-          {loading ? (
+          {commentsLoading ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Chargement des commentaires...</p>
             </div>
@@ -128,14 +136,11 @@ export default function CommentsList() {
       </main>
 
       {/* Guest selection modal */}
-      {showGuestModal && projectId && (
+      {showGuestSelectionModal && (
         <GuestSelectionModal
           projectId={projectId}
           onClose={() => setShowGuestModal(false)}
-          onGuestSelected={(guest) => {
-            setGuestSession(guest);
-            setIsInitialized(true);
-          }}
+          onGuestSelected={setGuestSession}
         />
       )}
     </div>

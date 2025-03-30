@@ -43,8 +43,17 @@ export function NavBar({ userName, isProjectPage = false, onGuestPrompt, guestDa
     try {
       await signIn(email, password);
       setShowLoginModal(false);
+      toast({
+        title: "Connexion réussie",
+        description: "Vous êtes maintenant connecté",
+      });
     } catch (error) {
       console.error("Login error:", error);
+      toast({
+        title: "Erreur de connexion",
+        description: "Vérifiez vos identifiants et réessayez",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

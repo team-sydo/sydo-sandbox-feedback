@@ -5,6 +5,7 @@ import { Guest } from "@/components/guest/GuestSelectionModal";
 export function useGuestSession() {
   const [guestData, setGuestData] = useState<Guest | null>(null);
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Load guest data from localStorage on component mount
   useEffect(() => {
@@ -17,6 +18,7 @@ export function useGuestSession() {
         localStorage.removeItem('guest_session');
       }
     }
+    setIsLoading(false);
   }, []);
   
   // Using useCallback to avoid unnecessary recreation of the function
@@ -42,6 +44,7 @@ export function useGuestSession() {
     setGuestSession,
     clearGuestSession,
     promptGuestSelection,
-    setShowGuestModal
+    setShowGuestModal,
+    isLoading
   };
 }
