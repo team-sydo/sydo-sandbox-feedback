@@ -231,26 +231,20 @@ export default function ProjectView() {
 
         {/* Informations du projet */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">{project.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">{project.title}</h1>
+            <Badge variant={project.active ? "success" : "destructive"}>
+              {project.active ? "Actif" : "Archivé"}
+            </Badge>
+          </div>
           {project.client_name && (
             <div className="text-lg text-gray-600 mt-1">
-              Client : {project.client_name}
+              {project.client_name}
             </div>
           )}
           {project.description && (
             <p className="mt-2 text-gray-600">{project.description}</p>
           )}
-          <div className="mt-2">
-            <Badge variant={project.active ? "success" : "destructive"}>
-              {project.active ? "Actif" : "Archivé"}
-            </Badge>
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/project/${projectId}/comments`}>
-                <MessageSquare className="h-4 w-4 mr-1" />
-                Voir les retours du projet
-              </Link>
-            </Button>
-          </div>
         </div>
 
         {/* Section des grains */}
@@ -258,15 +252,20 @@ export default function ProjectView() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Éléments à tester</CardTitle>
-              <CardDescription>
-                Liste des éléments web et vidéo à tester pour ce projet
-              </CardDescription>
             </div>
-            {user && (
-              <Button onClick={() => setIsGrainFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Ajouter un élément
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/project/${projectId}/comments`}>
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  Voir tous les retours
+                </Link>
               </Button>
-            )}
+              {user && (
+                <Button size="sm" onClick={() => setIsGrainFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter un élément
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <GrainsList
