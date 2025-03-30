@@ -1,5 +1,6 @@
 
-import { Check, Image } from "lucide-react";
+import { useState } from "react";
+import { Image } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { type Feedback } from "@/hooks/useProjectComments";
+import { ImagePreviewModal } from "./ImagePreviewModal";
 
 interface CommentsTableProps {
   feedbacks: Feedback[];
@@ -22,6 +24,11 @@ export function CommentsTable({
   toggleFeedbackStatus,
   formatTimecode
 }: CommentsTableProps) {
+  const [selectedImage, setSelectedImage] = useState<{
+    url: string;
+    content: string;
+  } | null>(null);
+
   const getCommenterName = (feedback: Feedback) => {
     if (feedback.user && feedback.user.prenom && feedback.user.nom) {
       return `${feedback.user.prenom} ${feedback.user.nom}`;
@@ -30,17 +37,17 @@ export function CommentsTable({
     }
     return "Anonyme";
   };
-  // const getCommenterData = (feedback: Feedback) => {
-  //   if (feedback.user && feedback.user.device && feedback.user.navigateur) {
-  //     return `${feedback.user.prenom} ${feedback.user.nom} (User)`;
-  //   } else if (feedback.guest && feedback.guest.prenom && feedback.guest.nom) {
-  //     return `${feedback.guest.prenom} ${feedback.guest.nom} (Guest)`;
-  //   }
-  //   return "Anonyme";
-  // };
 
   const getGrainTitle = (feedback: Feedback) => {
     return feedback.grain?.title || "Inconnu";
+  };
+
+  const handleImageClick = (url: string, content: string) => {
+    setSelectedImage({ url, content });
+  };
+
+  const closeModal = () => {
+    setSelectedImage(null);
   };
 
   return (
@@ -66,18 +73,16 @@ export function CommentsTable({
               <TableCell><p className="h-24 overflow-scroll">{feedback.content}</p></TableCell>
               <TableCell>
                 {feedback.screenshot_url ? (
-                  <a
-                    href={feedback.screenshot_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => handleImageClick(feedback.screenshot_url!, feedback.content)}
                     className="flex items-center gap-1 text-blue-500 hover:underline"
                   >
                     <img
                       src={feedback.screenshot_url}
                       alt="Capture"
-                      className="max-w-24 max-h-24"
+                      className="max-w-24 max-h-24 cursor-pointer hover:opacity-80 transition-opacity"
                     />
-                  </a>
+                  </button>
                 ) : (
                   <span className="text-gray-400">-</span>
                 )}
@@ -99,6 +104,15 @@ export function CommentsTable({
           ))}
         </TableBody>
       </Table>
+
+      {selectedImage && (
+        <ImagePreviewModal
+          isOpen={!!selectedImage}
+          onClose={closeModal}
+          imageUrl={selectedImage.url}
+          content={selectedImage.content}
+        />
+      )}
     </div>
   );
 }
