@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Guest } from "@/components/guest/GuestSelectionModal";
 
 export function useGuestSession() {
@@ -19,6 +19,11 @@ export function useGuestSession() {
     }
   }, []);
   
+  // Using useCallback to avoid unnecessary recreation of the function
+  const promptGuestSelection = useCallback(() => {
+    setShowGuestModal(true);
+  }, []);
+  
   const setGuestSession = (guest: Guest) => {
     // Store guest data in localStorage
     localStorage.setItem('guest_session', JSON.stringify(guest));
@@ -29,10 +34,6 @@ export function useGuestSession() {
   const clearGuestSession = () => {
     localStorage.removeItem('guest_session');
     setGuestData(null);
-  };
-  
-  const promptGuestSelection = () => {
-    setShowGuestModal(true);
   };
   
   return {

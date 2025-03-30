@@ -1,6 +1,6 @@
 
 import { useParams, Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +15,7 @@ import { useGuestSession } from "@/hooks/useGuestSession";
 export default function CommentsList() {
   const { projectId } = useParams();
   const { user } = useAuth();
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Guest session management
   const {
@@ -45,12 +46,32 @@ export default function CommentsList() {
   useEffect(() => {
     if (!user && !guestData) {
       promptGuestSelection();
+    } else {
+      setIsInitialized(true);
     }
   }, [user, guestData, promptGuestSelection]);
 
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
+
+  // If we're still initializing and there's no user or guest data, show loading indicator
+  if (!isInitialized && !user && !guestData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar 
+          userName={userName} 
+          isProjectPage={true} 
+          onGuestPrompt={promptGuestSelection}
+        />
+        <main className="container mx-auto py-8 px-4">
+          <div className="text-center py-12">
+            <p className="text-gray-500">Chargement du projet...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +132,10 @@ export default function CommentsList() {
         <GuestSelectionModal
           projectId={projectId}
           onClose={() => setShowGuestModal(false)}
-          onGuestSelected={setGuestSession}
+          onGuestSelected={(guest) => {
+            setGuestSession(guest);
+            setIsInitialized(true);
+          }}
         />
       )}
     </div>

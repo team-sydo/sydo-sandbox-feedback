@@ -27,8 +27,12 @@ export function NavBar({ userName, isProjectPage = false, onGuestPrompt, guestDa
 
   const handleLogout = () => {
     signOut();
+    // Si nous sommes sur une page de projet, afficher la modal d'invité après déconnexion
     if (isProjectPage && onGuestPrompt) {
-      onGuestPrompt();
+      // Ajout d'un petit délai pour que la déconnexion soit traitée avant d'afficher la modal
+      setTimeout(() => {
+        onGuestPrompt();
+      }, 100);
     }
   };
 
