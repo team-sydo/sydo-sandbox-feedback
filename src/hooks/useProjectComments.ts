@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,7 +89,6 @@ export function useProjectComments(projectId: string | undefined) {
     if (!projectId) return;
 
     try {
-      // Use the projectId directly to filter feedbacks
       let query = supabase
         .from("feedbacks")
         .select(
@@ -129,7 +127,6 @@ export function useProjectComments(projectId: string | undefined) {
       if (error) throw error;
 
       if (data) {
-        // Process the feedbacks
         const processedFeedbacks: Feedback[] = data.map((item) => {
           return {
             ...item,
@@ -142,10 +139,8 @@ export function useProjectComments(projectId: string | undefined) {
           };
         });
 
-        // Create a temporary list of authors
         const tempAuthors: Author[] = [];
 
-        // Fetch user and guest information
         for (let i = 0; i < processedFeedbacks.length; i++) {
           const feedback = processedFeedbacks[i];
 
@@ -159,7 +154,6 @@ export function useProjectComments(projectId: string | undefined) {
             if (userData) {
               processedFeedbacks[i].user = userData as UserData;
               
-              // Add user to authors list if not already there
               if (!tempAuthors.some(author => author.id === feedback.user_id)) {
                 tempAuthors.push({
                   id: feedback.user_id,
@@ -180,7 +174,6 @@ export function useProjectComments(projectId: string | undefined) {
             if (guestData) {
               processedFeedbacks[i].guest = guestData as UserData;
               
-              // Add guest to authors list if not already there
               if (!tempAuthors.some(author => author.id === feedback.guest_id)) {
                 tempAuthors.push({
                   id: feedback.guest_id,
@@ -192,7 +185,6 @@ export function useProjectComments(projectId: string | undefined) {
           }
         }
 
-        // Update the authors state
         setAuthors(tempAuthors);
         setFeedbacks(processedFeedbacks);
       }
@@ -241,6 +233,67 @@ export function useProjectComments(projectId: string | undefined) {
     }
   };
 
+  const updateFeedback = async (feedbackId: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from("feedbacks")
+        .update({ 
+          content,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", feedbackId);
+
+      if (error) throw error;
+
+      setFeedbacks(
+        feedbacks.map((feedback) =>
+          feedback.id === feedbackId
+            ? { ...feedback, content }
+            : feedback
+        )
+      );
+
+      toast({
+        title: "Succès",
+        description: "Le commentaire a été mis à jour",
+      });
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour du commentaire:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le commentaire",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteFeedback = async (feedbackId: string) => {
+    try {
+      const { error } = await supabase
+        .from("feedbacks")
+        .delete()
+        .eq("id", feedbackId);
+
+      if (error) throw error;
+
+      setFeedbacks(feedbacks.filter((feedback) => feedback.id !== feedbackId));
+
+      toast({
+        title: "Succès",
+        description: "Le commentaire a été supprimé",
+      });
+    } catch (error: any) {
+      console.error("Erreur lors de la suppression du commentaire:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le commentaire",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchProjectData();
   }, [projectId, toast]);
@@ -262,6 +315,8 @@ export function useProjectComments(projectId: string | undefined) {
     selectedAuthorId,
     setSelectedAuthorId,
     toggleFeedbackStatus,
-    fetchFeedbacks
+    fetchFeedbacks,
+    updateFeedback,
+    deleteFeedback
   };
 }
