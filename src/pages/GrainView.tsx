@@ -9,6 +9,7 @@ import FeedbackForm from "@/components/GrainView/FeedbackForm";
 import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
 import { GuestForm } from "@/components/GuestForm";
+import { Guest, Feedback } from "@/types";
 
 // Types
 interface Grain {
@@ -52,8 +53,6 @@ export default function GrainView() {
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    // et qu'aucun invité n'a été créé pour cette session
     if (!user && !guestCreated) {
       setIsGuestFormOpen(true);
     }
@@ -65,7 +64,6 @@ export default function GrainView() {
       try {
         setLoading(true);
 
-        // Récupérer les détails du grain
         const { data: grainData, error: grainError } = await supabase
           .from("grains")
           .select(
@@ -82,7 +80,6 @@ export default function GrainView() {
         if (grainError) throw grainError;
 
         setGrain(grainData);
-        // Récupérer les feedbacks du grain pour l'utilisateur actuel
         if (user) {
           await fetchFeedbacks();
         }
@@ -100,7 +97,7 @@ export default function GrainView() {
     fetchGrainDetails();
   }, [grainId, user, toast]);
   
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+  const handleGuestSubmit = (guest: Guest) => {
     setGuestCreated(true);
     setIsGuestFormOpen(false);
 
@@ -145,7 +142,6 @@ export default function GrainView() {
 
       if (error) throw error;
 
-      // Mettre à jour l'état local
       setFeedbacks((prev) =>
         prev.map((feedback) =>
           feedback.id === feedbackId
@@ -169,7 +165,6 @@ export default function GrainView() {
     }
   };
 
-  // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
@@ -201,9 +196,7 @@ export default function GrainView() {
       <NavBar userName={userName} />
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
           <header className="flex items-center justify-between px-4 bg-white border-b">
             <div className="flex items-center">
               <Link
@@ -229,7 +222,6 @@ export default function GrainView() {
             </button>
           </header>
 
-          {/* Contenu (iframe ou video) */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
             {grain?.type === "web" ? (
               <iframe
@@ -243,7 +235,6 @@ export default function GrainView() {
             )}
           </div>
 
-          {/* Formulaire de feedback */}
           <div>
             {user && grain && (
               <FeedbackForm
@@ -255,19 +246,8 @@ export default function GrainView() {
                 onFeedbackSubmitted={fetchFeedbacks}
               />
             )}
-            {/* {!user && grain && (
-              <FeedbackForm
-                grainId={grain.id}
-                projectId={grain.project_id}
-                userId={user.id}
-                currentTime={grain.type === "video" ? currentTime : null}
-                isVideoType={grain.type === "video"}
-                onFeedbackSubmitted={fetchFeedbacks}
-              />
-            )} */}
           </div>
         </div>
-        {/* Sidebar pour les feedbacks */}
         <aside
           className={`fixed w-72 h-full bg-gray-50 border-l transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
@@ -281,7 +261,6 @@ export default function GrainView() {
           />
         </aside>
       </div>
-      {/* Modal pour l'inscription d'un invité */}
       {isGuestFormOpen && (
         <GuestForm
           projectId={grain?.project_id || ""}
