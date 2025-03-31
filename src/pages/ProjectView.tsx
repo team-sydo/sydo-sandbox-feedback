@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Plus, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, MessageSquare, Link as LinkIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GrainForm } from "@/components/GrainForm";
 import { GrainsList } from "@/components/GrainsList";
@@ -246,6 +245,19 @@ export default function ProjectView() {
             <Badge variant={project.active ? "success" : "destructive"}>
               {project.active ? "Actif" : "Archivé"}
             </Badge>
+            <button
+              className="flex items-center px-2 py-1 text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast({
+                  title: "Succès",
+                  description: "URL copiée dans le presse-papier",
+                });
+              }}
+            >
+              <LinkIcon className="h-4 w-4 mr-1" />
+              Copier l'URL
+            </button>
           </div>
           {project.client_name && (
             <div className="text-lg text-gray-600 mt-1">
