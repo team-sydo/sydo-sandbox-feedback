@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClientCombobox } from "@/components/ClientCombobox";
+import { ClientCombobox, ClientSelection } from "@/components/ClientCombobox";
 
 interface NewProjectDialogProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedClient, setSelectedClient] = useState<{ value: string; label: string } | null>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientSelection | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,22 +47,40 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
     
     try {
       setIsSubmitting(true);
-      
+
+      let clientId = selectedClient?.type === "existing" ? selectedClient.value : null;
+       
+       // Si un nouveau client est sélectionné, on le crée d'abord
+       if (selectedClient?.type === "new" && selectedClient.value.trim()) {
+         const { data: newClient, error: clientError } = await supabase
+           .from('clients')
+           .insert([
+             {
+               nom: selectedClient.value.trim(),
+               user_id: user.id,
+             },
+           ])
+           .select('id')
+           .single();
+         
+         if (clientError) throw clientError;
+         
+         clientId = newClient.id;
+       }
+
       // Créer le projet
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('projects')
         .insert([
           {
             title,
             description: description.trim() || null,
-            client_id: selectedClient?.value || null,
+            client_id: clientId,
             user_id: user.id,
             created_by: user.id,
             active: true,
           },
         ])
-        .select('id')
-        .single();
       
       if (error) throw error;
       
@@ -126,7 +144,6 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
               onChange={setSelectedClient}
               placeholder="Sélectionner un client"
               emptyMessage="Aucun client trouvé"
-              items={[]} 
             />
           </div>
           
