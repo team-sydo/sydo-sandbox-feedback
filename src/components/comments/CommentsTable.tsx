@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Pen, Trash2, Image } from "lucide-react";
+import { Pen, Trash2, Image, Laptop, Smartphone, Tablet, Chrome, Firefox } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CommentsTableProps {
   feedbacks: Feedback[];
@@ -48,6 +49,7 @@ export function CommentsTable({
   const [feedbackToEdit, setFeedbackToEdit] = useState<Feedback | null>(null);
   const [feedbackToDelete, setFeedbackToDelete] = useState<Feedback | null>(null);
 
+  // Fonction pour obtenir le nom du commentateur
   const getCommenterName = (feedback: Feedback) => {
     if (feedback.user && feedback.user.prenom && feedback.user.nom) {
       return `${feedback.user.prenom} ${feedback.user.nom}`;
@@ -57,8 +59,76 @@ export function CommentsTable({
     return "Anonyme";
   };
 
+  // Fonction pour obtenir le titre du grain
   const getGrainTitle = (feedback: Feedback) => {
     return feedback.grain?.title || "Inconnu";
+  };
+
+  // Fonction pour obtenir l'icône du device
+  const getDeviceIcon = (feedback: Feedback) => {
+    const deviceType = feedback.user?.device || feedback.guest?.device;
+    
+    switch(deviceType) {
+      case "mobile":
+        return <Smartphone className="h-5 w-5 text-gray-600" />;
+      case "tablette":
+        return <Tablet className="h-5 w-5 text-gray-600" />;
+      case "ordinateur":
+      default:
+        return <Laptop className="h-5 w-5 text-gray-600" />;
+    }
+  };
+
+  // Fonction pour obtenir l'icône du navigateur
+  const getBrowserIcon = (feedback: Feedback) => {
+    const browserType = feedback.user?.navigateur || feedback.guest?.navigateur;
+    
+    switch(browserType) {
+      case "chrome":
+        return <Chrome className="h-5 w-5 text-gray-600" />;
+      case "firefox":
+        return <Firefox className="h-5 w-5 text-gray-600" />;
+      case "safari":
+        return <Image className="h-5 w-5 text-gray-600" />; // Placeholder for Safari
+      case "edge":
+        return <Image className="h-5 w-5 text-gray-600" />; // Placeholder for Edge
+      default:
+        return <Image className="h-5 w-5 text-gray-600" />; // Placeholder for other browsers
+    }
+  };
+
+  // Fonction pour obtenir le texte du device pour le tooltip
+  const getDeviceText = (feedback: Feedback) => {
+    const deviceType = feedback.user?.device || feedback.guest?.device;
+    
+    switch(deviceType) {
+      case "mobile":
+        return "Mobile";
+      case "tablette":
+        return "Tablette";
+      case "ordinateur":
+        return "Ordinateur";
+      default:
+        return "Non spécifié";
+    }
+  };
+
+  // Fonction pour obtenir le texte du navigateur pour le tooltip
+  const getBrowserText = (feedback: Feedback) => {
+    const browserType = feedback.user?.navigateur || feedback.guest?.navigateur;
+    
+    switch(browserType) {
+      case "chrome":
+        return "Chrome";
+      case "firefox":
+        return "Firefox";
+      case "safari":
+        return "Safari";
+      case "edge":
+        return "Edge";
+      default:
+        return "Autre";
+    }
   };
 
   const handleImageClick = (url: string, content: string) => {
@@ -100,6 +170,8 @@ export function CommentsTable({
             <TableHead>Commentaire</TableHead>
             <TableHead>Capture</TableHead>
             <TableHead>Time Code</TableHead>
+            <TableHead>Device</TableHead>
+            <TableHead>Navigateur</TableHead>
             <TableHead>Traité</TableHead>
             <TableHead className="w-24">Actions</TableHead>
           </TableRow>
@@ -131,6 +203,34 @@ export function CommentsTable({
                 {feedback.timecode !== null
                   ? formatTimecode(feedback.timecode)
                   : "-"}
+              </TableCell>
+              <TableCell>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex justify-center">
+                        {getDeviceIcon(feedback)}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{getDeviceText(feedback)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableCell>
+              <TableCell>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex justify-center">
+                        {getBrowserIcon(feedback)}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{getBrowserText(feedback)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </TableCell>
               <TableCell>
                 <Checkbox
