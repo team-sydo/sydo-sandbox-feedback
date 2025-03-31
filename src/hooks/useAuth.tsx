@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -12,7 +11,7 @@ export interface Guest {
   nom: string;
   poste: string | null;
   device?: "mobile" | "ordinateur" | "tablette";
-  navigateur?: "chrome" | "edge" | "firefox" | "safari" | "autre";
+  navigateur?: "chrome" | "edge" | "firefox" | "safari" | "autre" | "arc";
   project_id: string;
 }
 
