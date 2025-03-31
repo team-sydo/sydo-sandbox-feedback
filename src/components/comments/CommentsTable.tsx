@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Pen, Trash2, Image, Laptop, Smartphone, Tablet, Chrome, Firefox } from "lucide-react";
+import { Pen, Trash2, Image, Laptop, Smartphone, Tablet, Chrome } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -66,7 +66,9 @@ export function CommentsTable({
 
   // Fonction pour obtenir l'icône du device
   const getDeviceIcon = (feedback: Feedback) => {
-    const deviceType = feedback.user?.device || feedback.guest?.device;
+    const deviceType = feedback.user ? 
+      (typeof feedback.user === 'object' && 'device' in feedback.user ? feedback.user.device : null) : 
+      (feedback.guest && typeof feedback.guest === 'object' && 'device' in feedback.guest ? feedback.guest.device : null);
     
     switch(deviceType) {
       case "mobile":
@@ -81,25 +83,27 @@ export function CommentsTable({
 
   // Fonction pour obtenir l'icône du navigateur
   const getBrowserIcon = (feedback: Feedback) => {
-    const browserType = feedback.user?.navigateur || feedback.guest?.navigateur;
+    const browserType = feedback.user ? 
+      (typeof feedback.user === 'object' && 'navigateur' in feedback.user ? feedback.user.navigateur : null) : 
+      (feedback.guest && typeof feedback.guest === 'object' && 'navigateur' in feedback.guest ? feedback.guest.navigateur : null);
     
     switch(browserType) {
       case "chrome":
         return <Chrome className="h-5 w-5 text-gray-600" />;
       case "firefox":
-        return <Firefox className="h-5 w-5 text-gray-600" />;
       case "safari":
-        return <Image className="h-5 w-5 text-gray-600" />; // Placeholder for Safari
       case "edge":
-        return <Image className="h-5 w-5 text-gray-600" />; // Placeholder for Edge
+      case "arc":
       default:
-        return <Image className="h-5 w-5 text-gray-600" />; // Placeholder for other browsers
+        return <Image className="h-5 w-5 text-gray-600" />; // Use Image as a fallback for all other browsers
     }
   };
 
   // Fonction pour obtenir le texte du device pour le tooltip
   const getDeviceText = (feedback: Feedback) => {
-    const deviceType = feedback.user?.device || feedback.guest?.device;
+    const deviceType = feedback.user ? 
+      (typeof feedback.user === 'object' && 'device' in feedback.user ? feedback.user.device : null) : 
+      (feedback.guest && typeof feedback.guest === 'object' && 'device' in feedback.guest ? feedback.guest.device : null);
     
     switch(deviceType) {
       case "mobile":
@@ -115,7 +119,9 @@ export function CommentsTable({
 
   // Fonction pour obtenir le texte du navigateur pour le tooltip
   const getBrowserText = (feedback: Feedback) => {
-    const browserType = feedback.user?.navigateur || feedback.guest?.navigateur;
+    const browserType = feedback.user ? 
+      (typeof feedback.user === 'object' && 'navigateur' in feedback.user ? feedback.user.navigateur : null) : 
+      (feedback.guest && typeof feedback.guest === 'object' && 'navigateur' in feedback.guest ? feedback.guest.navigateur : null);
     
     switch(browserType) {
       case "chrome":
@@ -126,6 +132,8 @@ export function CommentsTable({
         return "Safari";
       case "edge":
         return "Edge";
+      case "arc":
+        return "Arc";
       default:
         return "Autre";
     }
