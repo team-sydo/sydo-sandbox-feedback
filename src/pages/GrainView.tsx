@@ -31,17 +31,6 @@ interface Feedback {
   created_at: string;
 }
 
-interface Guest {
-  id: string;
-  prenom: string;
-  nom: string;
-  poste: string | null;
-  device: "mobile" | "ordinateur" | "tablette";
-  navigateur: "chrome" | "edge" | "firefox" | "safari" | "autre";
-  project_id: string;
-}
-
-
 export default function GrainView() {
   const { grainId } = useParams<{ grainId: string }>();
   const { user, guest, setGuestData } = useAuth();
