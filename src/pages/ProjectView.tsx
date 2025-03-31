@@ -61,7 +61,7 @@ export default function ProjectView() {
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté 
+    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
     // et qu'aucun invité n'a été créé pour cette session
     if (!user && !guestCreated) {
       setIsGuestFormOpen(true);
@@ -117,10 +117,14 @@ export default function ProjectView() {
         setGrains(grainsData || []);
       } catch (error: any) {
         console.error("Error fetching project details:", error);
-        setError(error.message || "Une erreur s'est produite lors du chargement du projet");
+        setError(
+          error.message ||
+            "Une erreur s'est produite lors du chargement du projet"
+        );
         toast({
           title: "Erreur",
-          description: error.message || "Impossible de charger les détails du projet",
+          description:
+            error.message || "Impossible de charger les détails du projet",
           variant: "destructive",
         });
       } finally {
@@ -235,7 +239,9 @@ export default function ProjectView() {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Retour aux projets
             </Link>
-          ) : ""}
+          ) : (
+            ""
+          )}
         </div>
 
         {/* Informations du projet */}
@@ -245,19 +251,6 @@ export default function ProjectView() {
             <Badge variant={project.active ? "success" : "destructive"}>
               {project.active ? "Actif" : "Archivé"}
             </Badge>
-            <button
-              className="flex items-center px-2 py-1 text-gray-500 hover:text-gray-700"
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                toast({
-                  title: "Succès",
-                  description: "URL copiée dans le presse-papier",
-                });
-              }}
-            >
-              <LinkIcon className="h-4 w-4 mr-1" />
-              Copier l'URL
-            </button>
           </div>
           {project.client_name && (
             <div className="text-lg text-gray-600 mt-1">
@@ -278,6 +271,21 @@ export default function ProjectView() {
             <div className="flex gap-2">
               {user && (
                 <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center px-2 py-1 text-gray-500 hover:text-gray-700"
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast({
+                        title: "Succès",
+                        description: "URL copiée dans le presse-papier",
+                      });
+                    }}
+                  >
+                    <LinkIcon className="h-4 w-4 mr-1" />
+                    Copier l'URL
+                  </Button>
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/project/${projectId}/comments`}>
                       <MessageSquare className="h-4 w-4 mr-1" />
