@@ -47,7 +47,7 @@ interface Guest {
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { user } = useAuth();
+  const { user, guest, setGuestData } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -56,19 +56,14 @@ export default function ProjectView() {
   const [isGrainFormOpen, setIsGrainFormOpen] = useState(false);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [guestCreated, setGuestCreated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Vérifier si l'utilisateur est connecté
   useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    // et qu'aucun invité n'a été créé pour cette session
-    if (!user && !guestCreated) {
+    if (!user && !guest) {
       setIsGuestFormOpen(true);
     }
-  }, [user, guestCreated]);
+  }, [user, guest]);
 
-  // Charger les détails du projet
   useEffect(() => {
     const fetchProjectDetails = async () => {
       if (!projectId) return;
@@ -77,7 +72,6 @@ export default function ProjectView() {
         setLoading(true);
         setError(null);
 
-        // Récupérer les détails du projet en utilisant maybeSingle au lieu de single
         const { data: projectData, error: projectError } = await supabase
           .from("projects")
           .select(
@@ -100,12 +94,10 @@ export default function ProjectView() {
             client_name: projectData.clients ? projectData.clients.nom : null,
           });
         } else {
-          // Si aucun projet n'est trouvé, définir un état d'erreur
           setError("Projet non trouvé");
           setProject(null);
         }
 
-        // Récupérer les grains du projet
         const { data: grainsData, error: grainsError } = await supabase
           .from("grains")
           .select("*")
@@ -134,7 +126,6 @@ export default function ProjectView() {
     fetchProjectDetails();
   }, [projectId, toast]);
 
-  // Gérer l'ajout d'un nouveau grain
   const handleAddGrain = (newGrain: Grain) => {
     setGrains((prev) => [newGrain, ...prev]);
     setIsGrainFormOpen(false);
@@ -145,7 +136,6 @@ export default function ProjectView() {
     });
   };
 
-  // Gérer la mise à jour du statut d'un grain
   const handleGrainStatusToggle = async (grainId: string, done: boolean) => {
     try {
       const { error } = await supabase
@@ -155,7 +145,6 @@ export default function ProjectView() {
 
       if (error) throw error;
 
-      // Mettre à jour l'état local
       setGrains((prev) =>
         prev.map((grain) => (grain.id === grainId ? { ...grain, done } : grain))
       );
@@ -175,21 +164,18 @@ export default function ProjectView() {
     }
   };
 
-  // Gérer la soumission du formulaire invité
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
-    setGuestCreated(true);
+  const handleGuestSubmit = (newGuest: Guest) => {
     setIsGuestFormOpen(false);
 
     toast({
       title: "Bienvenue !",
-      description: `Merci de votre participation, ${guest.prenom}`,
+      description: `Merci de votre participation, ${newGuest.prenom}`,
     });
   };
 
-  // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-    : "";
+    : guest ? `${guest.prenom} ${guest.nom}` : "";
 
   if (loading && !project) {
     return (
@@ -229,7 +215,6 @@ export default function ProjectView() {
       <NavBar userName={userName} />
 
       <main className="flex-1 container mx-auto py-8 px-4">
-        {/* En-tête avec navigation */}
         <div className="mb-8">
           {user ? (
             <Link
@@ -244,7 +229,6 @@ export default function ProjectView() {
           )}
         </div>
 
-        {/* Informations du projet */}
         <div className="mb-8">
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold">{project.title}</h1>
@@ -262,7 +246,6 @@ export default function ProjectView() {
           )}
         </div>
 
-        {/* Section des grains */}
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -309,7 +292,6 @@ export default function ProjectView() {
         </Card>
       </main>
 
-      {/* Modal pour l'ajout d'un grain */}
       {isGrainFormOpen && (
         <GrainForm
           projectId={projectId || ""}
@@ -318,7 +300,6 @@ export default function ProjectView() {
         />
       )}
 
-      {/* Modal pour l'inscription d'un invité */}
       {isGuestFormOpen && (
         <GuestForm
           projectId={projectId || ""}

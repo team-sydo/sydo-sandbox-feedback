@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,9 +23,8 @@ interface Guest {
 
 export default function CommentsList() {
   const { projectId } = useParams();
-  const { user } = useAuth();
+  const { user, guest, setGuestData } = useAuth();
   const { toast } = useToast();
-  const [guestCreated, setGuestCreated] = useState(false);
   const [displayActions, setDisplayActions] = useState(true);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const {
@@ -46,27 +44,28 @@ export default function CommentsList() {
     deleteFeedback,
     fetchFeedbacks,
   } = useProjectComments(projectId);
+  
   const userName = user
-  ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-  : "";
+    ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
+    : guest ? `${guest.prenom} ${guest.nom}` : "";
+
   useEffect(() => {
     // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    // et qu'aucun invité n'a été créé pour cette session
-    if (!user && !guestCreated) {
+    // et qu'aucun invité n'est enregistré dans le contexte
+    if (!user && !guest) {
       setIsGuestFormOpen(true);
       setDisplayActions(false);
     } else {
       setDisplayActions(true);
     }
-  }, [user, guestCreated, displayActions]);
+  }, [user, guest, displayActions]);
 
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
-    setGuestCreated(true);
+  const handleGuestSubmit = (newGuest: Guest) => {
     setIsGuestFormOpen(false);
 
     toast({
       title: "Bienvenue !",
-      description: `Merci de votre participation, ${guest.prenom}`,
+      description: `Merci de votre participation, ${newGuest.prenom}`,
     });
   };
 
