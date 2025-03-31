@@ -2,38 +2,36 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-interface Client {
-  id: string;
-  nom: string;
-}
-
-export interface ClientSelection {
-  type: "existing" | "new";
+interface ClientOption {
   value: string;
   label: string;
 }
 
 interface ClientComboboxProps {
-  value: ClientSelection | null;
-  onChange: (value: ClientSelection | null) => void;
+  value: ClientOption | null;
+  onChange: (value: ClientOption | null) => void;
   placeholder?: string;
   emptyMessage?: string;
+  items?: ClientOption[]; // Make items optional with default value
 }
 
-export function ClientCombobox({
-  value,
-  onChange,
-  placeholder = "Sélectionner un client",
-  emptyMessage = "Aucun client trouvé"
+export function ClientCombobox({ 
+  value, 
+  onChange, 
+  placeholder = "Sélectionner un client", 
+  emptyMessage = "Aucun client trouvé",
+  items = [] // Default to empty array
 }: ClientComboboxProps) {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [open, setOpen] = useState(false);
+  const [clientOptions, setClientOptions] = useState<ClientOption[]>(items); // Initialize with items or empty array
   const [isLoading, setIsLoading] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
 
   // Charger la liste des clients depuis Supabase
   useEffect(() => {
@@ -51,7 +49,13 @@ export function ClientCombobox({
         
         if (error) throw error;
         
-        setClients(data || []);
+        // Transformer les données pour le combobox
+        const options = (data || []).map((client) => ({
+          value: client.id,
+          label: client.nom
+        }));
+        
+        setClientOptions(options);
       } catch (error) {
         console.error("Error loading clients:", error);
       } finally {
@@ -59,80 +63,51 @@ export function ClientCombobox({
       }
     };
     
-    fetchClients();
-  }, [user]);
-
-  const handleSelectChange = (selectedValue: string) => {
-    if (selectedValue === "new") {
-      onChange({
-        type: "new",
-        value: "",
-        label: "Nouveau client"
-      });
-      setNewClientName("");
-    } else {
-      const selectedClient = clients.find(client => client.id === selectedValue);
-      if (selectedClient) {
-        onChange({
-          type: "existing",
-          value: selectedClient.id,
-          label: selectedClient.nom
-        });
-      }
+    // Only fetch from Supabase if items aren't provided
+    if (items.length === 0) {
+      fetchClients();
     }
-  };
-
-  const handleNewClientNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewClientName(e.target.value);
-    onChange({
-      type: "new",
-      value: e.target.value,
-      label: e.target.value
-    });
-  };
+  }, [user, items]);
 
   return (
-    <div className="space-y-2">
-      <Select
-        value={value?.type === "existing" ? value.value : value?.type === "new" ? "new" : ""}
-        onValueChange={handleSelectChange}
-        disabled={isLoading}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {isLoading ? (
-            <div className="py-2 px-2 text-sm">Chargement...</div>
-          ) : clients.length === 0 ? (
-            <div className="py-2 px-2 text-sm">{emptyMessage}</div>
-          ) : (
-            <>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.nom}
-                </SelectItem>
-              ))}
-              <SelectItem value="new" className="font-medium text-primary">
-                + Ajouter nouveau
-              </SelectItem>
-            </>
-          )}
-        </SelectContent>
-      </Select>
-
-      {value?.type === "new" && (
-        <div className="pt-2">
-          <Label htmlFor="new-client-name">Nom du nouveau client</Label>
-          <Input
-            id="new-client-name"
-            value={newClientName}
-            onChange={handleNewClientNameChange}
-            placeholder="Entrez le nom du client"
-            className="mt-1"
-          />
-        </div>
-      )}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {value ? value.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0" align="start">
+        <Command>
+          <CommandInput placeholder={placeholder} />
+          <CommandEmpty>{isLoading ? "Chargement..." : emptyMessage}</CommandEmpty>
+          <CommandGroup className="max-h-60 overflow-auto">
+            {clientOptions.map((client) => (
+              <CommandItem
+                key={client.value}
+                value={client.value}
+                onSelect={() => {
+                  onChange(client.value === value?.value ? null : client);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value?.value === client.value ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {client.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
