@@ -44,6 +44,7 @@ interface CommentsTableProps {
   formatTimecode: (seconds: number | null) => string;
   updateFeedback: (id: string, content: string) => Promise<void>;
   deleteFeedback: (id: string) => Promise<void>;
+  displayActions: boolean;
 }
 
 export function CommentsTable({
@@ -52,6 +53,7 @@ export function CommentsTable({
   formatTimecode,
   updateFeedback,
   deleteFeedback,
+  displayActions
 }: CommentsTableProps) {
   const [selectedImage, setSelectedImage] = useState<{
     url: string;
@@ -222,9 +224,7 @@ export function CommentsTable({
             <TableHead>Nom</TableHead>
             <TableHead>Commentaire</TableHead>
             <TableHead>Capture</TableHead>
-            {/* <TableHead>Time Code</TableHead> */}
-            {/* <TableHead>Traité</TableHead> */}
-            <TableHead className="w-16">Actions</TableHead>
+            {displayActions && <TableHead className="w-16">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -291,7 +291,7 @@ export function CommentsTable({
                   ? formatTimecode(feedback.timecode)
                   : ""}
               </TableCell>
-              <TableCell>
+              {displayActions && <TableCell>
                 <div className="flex space-x-2 items-center">
                   <Button
                     variant="ghost"
@@ -316,7 +316,7 @@ export function CommentsTable({
                   }
                 />
                 </div>
-              </TableCell>
+              </TableCell>}
             </TableRow>
           ))}
         </TableBody>

@@ -21,13 +21,13 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/project/:projectId" element={<ProjectView />} />
+            <Route path="/project/:projectId/comments" element={<CommentsList />} />
+            <Route path="/grain/:grainId" element={<GrainView />} />
           </Route>
           
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/project/:projectId/comments" element={<CommentsList />} />
-            <Route path="/grain/:grainId" element={<GrainView />} />
           </Route>
           
           {/* 404 route */}

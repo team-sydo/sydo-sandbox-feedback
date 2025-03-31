@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           // Only redirect to auth page if NOT on a project view page or home page
-          if (!currentPath.startsWith('/project/') && currentPath !== '/') {
+          if (!currentPath.startsWith('/project/') && currentPath !== '/' &&!currentPath.startsWith('/grain/')) {
             setTimeout(() => {
               navigate('/auth');
             }, 0);

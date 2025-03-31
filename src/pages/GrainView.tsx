@@ -8,6 +8,7 @@ import { ArrowLeft, MessageCircle } from "lucide-react";
 import FeedbackForm from "@/components/GrainView/FeedbackForm";
 import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
+import { GuestForm } from "@/components/GuestForm";
 
 // Types
 interface Grain {
@@ -29,7 +30,18 @@ interface Feedback {
   screenshot_url: string | null;
   done: boolean;
   user_id: string | null;
+  guest_id: string | null;
   created_at: string;
+}
+
+interface Guest {
+  id: string;
+  prenom: string;
+  nom: string;
+  poste: string | null;
+  device: "mobile" | "ordinateur" | "tablette";
+  navigateur: "chrome" | "edge" | "firefox" | "safari" | "autre";
+  project_id: string;
 }
 
 export default function GrainView() {
@@ -39,14 +51,23 @@ export default function GrainView() {
 
   // États
   const [grain, setGrain] = useState<Grain | null>(null);
+  const [guest, setGuest] = useState<Guest | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [guestCreated, setGuestCreated] = useState(false);
+  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
 
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
+  useEffect(() => {
+    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
+    // et qu'aucun invité n'a été créé pour cette session
+    if (!user && !guestCreated) {
+      setIsGuestFormOpen(true);
+    }
+  }, [user, guestCreated]);
   useEffect(() => {
     const fetchGrainDetails = async () => {
       if (!grainId) return;
@@ -71,7 +92,6 @@ export default function GrainView() {
         if (grainError) throw grainError;
 
         setGrain(grainData);
-
         // Récupérer les feedbacks du grain pour l'utilisateur actuel
         if (user) {
           await fetchFeedbacks();
@@ -89,7 +109,16 @@ export default function GrainView() {
 
     fetchGrainDetails();
   }, [grainId, user, toast]);
+  
+  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+    setGuestCreated(true);
+    setIsGuestFormOpen(false);
 
+    toast({
+      title: "Bienvenue !",
+      description: `Merci de votre participation, ${guest.prenom}`,
+    });
+  };
   const fetchFeedbacks = async () => {
     if (!grainId || !user) return;
 
@@ -99,6 +128,7 @@ export default function GrainView() {
         .select("*")
         .eq("grain_id", grainId)
         .eq("user_id", user.id)
+        .eq("guest_id", guest.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
@@ -181,8 +211,6 @@ export default function GrainView() {
       <NavBar userName={userName} />
 
       <div className="flex flex-1 overflow-hidden relative">
-       
-
         {/* Contenu principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
@@ -224,9 +252,9 @@ export default function GrainView() {
               <VideoPlayer url={grain?.url} onTimeUpdate={handleTimeUpdate} />
             )}
           </div>
-          
+
           {/* Formulaire de feedback */}
-          <div >
+          <div>
             {user && grain && (
               <FeedbackForm
                 grainId={grain.id}
@@ -237,9 +265,19 @@ export default function GrainView() {
                 onFeedbackSubmitted={fetchFeedbacks}
               />
             )}
+            {/* {!user && grain && (
+              <FeedbackForm
+                grainId={grain.id}
+                projectId={grain.project_id}
+                userId={user.id}
+                currentTime={grain.type === "video" ? currentTime : null}
+                isVideoType={grain.type === "video"}
+                onFeedbackSubmitted={fetchFeedbacks}
+              />
+            )} */}
           </div>
         </div>
-         {/* Sidebar pour les feedbacks */}
+        {/* Sidebar pour les feedbacks */}
         <aside
           className={`fixed w-72 h-full bg-gray-50 border-l transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "translate-x-full"
@@ -253,6 +291,14 @@ export default function GrainView() {
           />
         </aside>
       </div>
+      {/* Modal pour l'inscription d'un invité */}
+      {isGuestFormOpen && (
+        <GuestForm
+          projectId={grain?.project_id || ""}
+          onClose={() => setIsGuestFormOpen(false)}
+          onSubmit={handleGuestSubmit}
+        />
+      )}
     </div>
   );
 }

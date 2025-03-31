@@ -1,4 +1,5 @@
 
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
@@ -8,10 +9,26 @@ import { useProjectComments } from "@/hooks/useProjectComments";
 import { CommentsFilters } from "@/components/comments/CommentsFilters";
 import { CommentsTable } from "@/components/comments/CommentsTable";
 import { formatTimecode } from "@/utils/formatting";
+import { GuestForm } from "@/components/GuestForm";
+import { useToast } from "@/hooks/use-toast";
+
+interface Guest {
+  id: string;
+  prenom: string;
+  nom: string;
+  poste: string | null;
+  device: "mobile" | "ordinateur" | "tablette";
+  navigateur: "chrome" | "edge" | "firefox" | "safari" | "autre";
+  project_id: string;
+}
 
 export default function CommentsList() {
   const { projectId } = useParams();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [guestCreated, setGuestCreated] = useState(false);
+  const [displayActions, setDisplayActions] = useState(true);
+  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const {
     loading,
     projectTitle,
@@ -27,12 +44,32 @@ export default function CommentsList() {
     toggleFeedbackStatus,
     updateFeedback,
     deleteFeedback,
-    fetchFeedbacks
+    fetchFeedbacks,
   } = useProjectComments(projectId);
   const userName = user
   ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
   : "";
-  
+  useEffect(() => {
+    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
+    // et qu'aucun invité n'a été créé pour cette session
+    if (!user && !guestCreated) {
+      setIsGuestFormOpen(true);
+      setDisplayActions(false);
+    } else {
+      setDisplayActions(true);
+    }
+  }, [user, guestCreated, displayActions]);
+
+  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+    setGuestCreated(true);
+    setIsGuestFormOpen(false);
+
+    toast({
+      title: "Bienvenue !",
+      description: `Merci de votre participation, ${guest.prenom}`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar userName={userName} />
@@ -79,10 +116,19 @@ export default function CommentsList() {
               formatTimecode={formatTimecode}
               updateFeedback={updateFeedback}
               deleteFeedback={deleteFeedback}
+              displayActions={displayActions}
             />
           )}
         </div>
       </main>
+        {/* Modal pour l'inscription d'un invité */}
+        {isGuestFormOpen && (
+        <GuestForm
+          projectId={projectId || ""}
+          onClose={() => setIsGuestFormOpen(false)}
+          onSubmit={handleGuestSubmit}
+        />
+      )}
     </div>
   );
 }
