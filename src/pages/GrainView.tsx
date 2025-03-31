@@ -10,6 +10,7 @@ import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
 import { GuestForm } from "@/components/GuestForm";
 
+// Types
 interface Grain {
   id: string;
   title: string;
@@ -45,28 +46,28 @@ interface Guest {
 
 export default function GrainView() {
   const { grainId } = useParams<{ grainId: string }>();
-  const { user, guest, setGuestData } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   // États
   const [grain, setGrain] = useState<Grain | null>(null);
+  const [guest, setGuest] = useState<Guest | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [guestCreated, setGuestCreated] = useState(false);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
 
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  
   useEffect(() => {
     // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    // et qu'aucun invité n'est enregistré
-    if (!user && !guest) {
+    // et qu'aucun invité n'a été créé pour cette session
+    if (!user && !guestCreated) {
       setIsGuestFormOpen(true);
     }
-  }, [user, guest]);
-  
+  }, [user, guestCreated]);
   useEffect(() => {
     const fetchGrainDetails = async () => {
       if (!grainId) return;
@@ -109,36 +110,25 @@ export default function GrainView() {
     fetchGrainDetails();
   }, [grainId, user, toast]);
   
-  const handleGuestSubmit = (newGuest: Guest) => {
+  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+    setGuestCreated(true);
     setIsGuestFormOpen(false);
 
     toast({
       title: "Bienvenue !",
-      description: `Merci de votre participation, ${newGuest.prenom}`,
+      description: `Merci de votre participation, ${guest.prenom}`,
     });
   };
-  
   const fetchFeedbacks = async () => {
-    if (!grainId) return;
-    
+    if (!grainId || !user) return;
+
     try {
-      let query = supabase
+      const { data: feedbacksData, error: feedbacksError } = await supabase
         .from("feedbacks")
         .select("*")
-        .eq("grain_id", grainId);
-        
-      // Filtrer les feedbacks selon l'utilisateur ou le guest
-      if (user) {
-        query = query.eq("user_id", user.id);
-      } else if (guest) {
-        query = query.eq("guest_id", guest.id);
-      } else {
-        // Si ni user ni guest, ne pas charger de feedbacks
-        setFeedbacks([]);
-        return;
-      }
-      
-      const { data: feedbacksData, error: feedbacksError } = await query
+        .eq("grain_id", grainId)
+        .eq("user_id", user.id)
+        .eq("guest_id", guest.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
@@ -192,7 +182,7 @@ export default function GrainView() {
   // Get user name for NavBar
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-    : guest ? `${guest.prenom} ${guest.nom}` : "";
+    : "";
 
   if (loading && !grain) {
     return (

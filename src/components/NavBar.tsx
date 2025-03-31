@@ -11,7 +11,7 @@ interface NavBarProps {
 }
 
 export function NavBar({ userName }: NavBarProps) {
-  const { signOut, user, guest } = useAuth();
+  const { signOut, user } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -30,16 +30,13 @@ export function NavBar({ userName }: NavBarProps) {
     }
   };
 
-  // Déterminer le nom à afficher (utilisateur connecté ou invité)
-  const displayName = userName || (guest ? `${guest.prenom} ${guest.nom}` : "");
-
   return (
     <nav className="border-b py-4 px-6 flex justify-between items-center bg-white">
       <SydoLogo />
       <div className="flex items-center gap-4">
-        {displayName && (
+        {userName && (
           <div className="text-sm font-medium">
-            {displayName}
+            {userName}
           </div>
         )}
         <Button 
