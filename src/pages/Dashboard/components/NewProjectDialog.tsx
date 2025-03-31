@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-// import { ClientCombobox } from "@/components/ClientCombobox";
+import { ClientCombobox } from "@/components/ClientCombobox";
 
 interface NewProjectDialogProps {
   isOpen: boolean;
@@ -119,7 +119,7 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
           </div>
           
           
-          {/* <div className="space-y-2">
+          <div className="space-y-2">
             <Label>Client</Label>
             <ClientCombobox 
               value={selectedClient} 
@@ -128,7 +128,7 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
               emptyMessage="Aucun client trouvé"
               items={[]} 
             />
-          </div> */}
+          </div>
           
           <DialogFooter className="pt-4">
             <Button
