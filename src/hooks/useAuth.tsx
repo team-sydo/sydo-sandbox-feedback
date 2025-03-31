@@ -1,28 +1,16 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-// Type pour le guest
-export interface Guest {
-  id: string;
-  prenom: string;
-  nom: string;
-  poste: string | null;
-  device?: "mobile" | "ordinateur" | "tablette";
-  navigateur?: "chrome" | "edge" | "firefox" | "safari" | "autre" | "arc";
-  project_id: string;
-}
-
 type AuthContextType = {
   user: User | null;
   session: Session | null;
-  guest: Guest | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => Promise<void>;
-  setGuestData: (guestData: Guest) => void;
   loading: boolean;
 };
 
@@ -31,32 +19,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [guest, setGuest] = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const currentPath = location.pathname;
-
-  // Fonction pour définir les données du guest
-  const setGuestData = (guestData: Guest) => {
-    setGuest(guestData);
-    // Optionnellement, on peut stocker ces données dans le localStorage pour les conserver entre les sessions
-    localStorage.setItem('guestData', JSON.stringify(guestData));
-  };
-
-  // Effet pour récupérer les données du guest depuis le localStorage au chargement
-  useEffect(() => {
-    const storedGuestData = localStorage.getItem('guestData');
-    if (storedGuestData) {
-      try {
-        setGuest(JSON.parse(storedGuestData));
-      } catch (error) {
-        console.error("Error parsing stored guest data:", error);
-        localStorage.removeItem('guestData');
-      }
-    }
-  }, []);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -162,9 +129,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      // Nettoyer également les données du guest lorsqu'un utilisateur se déconnecte
-      setGuest(null);
-      localStorage.removeItem('guestData');
       toast({
         title: "Déconnexion réussie",
         description: "À bientôt !",
@@ -184,11 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         session,
-        guest,
         signIn,
         signUp,
         signOut,
-        setGuestData,
         loading,
       }}
     >
