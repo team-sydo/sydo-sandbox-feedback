@@ -38,13 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             navigate('/dashboard');
           }, 0);
         } else if (event === 'SIGNED_OUT') {
-          // Only redirect to auth page if NOT on a project view page or home page
-          if (!currentPath.startsWith('/project/') && currentPath !== '/' &&!currentPath.startsWith('/grain/')) {
+          // Only redirect to auth page if NOT on a project view page, grain view page, comments list page or home page
+          if (!currentPath.startsWith('/project/') && 
+              !currentPath.startsWith('/grain/') && 
+              !currentPath.includes('/comments') && 
+              currentPath !== '/') {
             setTimeout(() => {
               navigate('/auth');
             }, 0);
           }
-          // No redirection for project pages - user stays on the same page
+          // No redirection for public pages - user stays on the same page
         }
       }
     );
@@ -56,12 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
 
       // Don't redirect if we already have a session and are on a valid route
-      // or if we're on a project page (which is accessible without auth)
+      // or if we're on a public page (which is accessible without auth)
       if (!session && 
           !currentPath.startsWith('/project/') && 
+          !currentPath.startsWith('/grain/') && 
+          !currentPath.includes('/comments') && 
           currentPath !== '/' && 
           currentPath !== '/auth') {
-        // Only redirect to auth if not on home, auth, or project page
+        // Only redirect to auth if not on home, auth, or public pages
         navigate('/auth');
       }
     });
@@ -122,7 +127,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Déconnexion réussie",
+        description: "À bientôt !",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur de déconnexion",
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive",
+      });
+      console.error("Logout error:", error);
+    }
   };
 
   return (
