@@ -5,11 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 interface UserData {
   nom: string;
   prenom: string;
+  device: string;
+  navigateur: string;
+  poste: string;
 }
 
 export interface Author {
   id: string;
   name: string;
+  device: string;
+  navigateur: string;
+  poste: string;
   type: "user" | "guest";
 }
 
@@ -147,7 +153,7 @@ export function useProjectComments(projectId: string | undefined) {
           if (feedback.user_id) {
             const { data: userData } = await supabase
               .from("users")
-              .select("nom, prenom")
+              .select("nom, prenom, device, navigateur")
               .eq("id", feedback.user_id)
               .single();
 
@@ -158,6 +164,9 @@ export function useProjectComments(projectId: string | undefined) {
                 tempAuthors.push({
                   id: feedback.user_id,
                   name: `${userData.prenom} ${userData.nom}`,
+                  device: userData.device,
+                  navigateur: userData.navigateur,
+                  poste: "",
                   type: "user"
                 });
               }
@@ -167,7 +176,7 @@ export function useProjectComments(projectId: string | undefined) {
           if (feedback.guest_id) {
             const { data: guestData } = await supabase
               .from("guests")
-              .select("nom, prenom")
+              .select("nom, prenom, device, navigateur, poste")
               .eq("id", feedback.guest_id)
               .single();
 
@@ -178,6 +187,9 @@ export function useProjectComments(projectId: string | undefined) {
                 tempAuthors.push({
                   id: feedback.guest_id,
                   name: `${guestData.prenom} ${guestData.nom}`,
+                  device: guestData.device,
+                  navigateur: guestData.navigateur,
+                  poste: guestData.poste,
                   type: "guest"
                 });
               }
