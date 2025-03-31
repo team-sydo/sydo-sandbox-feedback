@@ -9,18 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus } from "lucide-react";
+import { useAuth, Guest } from "@/hooks/useAuth";
 
 interface GuestFormProps {
   projectId: string;
   onClose: () => void;
-  onSubmit: (guest: any) => void;
-}
-
-interface Guest {
-  id: string;
-  prenom: string;
-  nom: string;
-  poste?: string | null;
+  onSubmit: (guest: Guest) => void;
 }
 
 export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
@@ -34,6 +28,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'new' | 'existing'>('new');
   const { toast } = useToast();
+  const { setGuestData } = useAuth();
 
   // Fetch existing guests for this project
   useEffect(() => {
@@ -78,7 +73,9 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Selected existing guest:", selectedGuest);
         
         if (selectedGuest) {
-          // Use the existing guest data
+          // Store the selected guest in the auth context
+          setGuestData(selectedGuest);
+          // Call the original onSubmit
           onSubmit(selectedGuest);
           onClose();
           return;
@@ -122,6 +119,9 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Created guest:", data);
         
         if (data && data.length > 0) {
+          // Store the new guest in the auth context
+          setGuestData(data[0]);
+          // Call the original onSubmit
           onSubmit(data[0]);
           toast({
             title: "Succès",
