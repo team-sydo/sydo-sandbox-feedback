@@ -11,49 +11,38 @@ interface NavBarProps {
 }
 
 export function NavBar({ userName }: NavBarProps) {
-  const { signOut, user, guest } = useAuth();
+  const { signOut, user } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleAuthAction = async () => {
+  const handleAuthAction = () => {
     if (user) {
-      try {
-        setIsLoggingOut(true);
-        await signOut();
-      } catch (error) {
-        console.error("Error during logout:", error);
-      } finally {
-        setIsLoggingOut(false);
-      }
+      // Simply sign out without redirecting - the useAuth context will handle staying on the same page
+      signOut();
     } else {
       setIsLoginModalOpen(true);
     }
   };
 
-  // Déterminer le nom à afficher (utilisateur connecté ou invité)
-  const displayName = userName || (guest ? `${guest.prenom} ${guest.nom}` : "");
-
   return (
     <nav className="border-b py-4 px-6 flex justify-between items-center bg-white">
       <SydoLogo />
       <div className="flex items-center gap-4">
-        {displayName && (
+        {userName && (
           <div className="text-sm font-medium">
-            {displayName}
+            {userName}
           </div>
         )}
         <Button 
           variant="ghost" 
           size="sm"
           onClick={handleAuthAction}
-          disabled={isLoggingOut}
           className="flex items-center gap-2"
           title={user ? "Déconnexion" : "Connexion"}
         >
           {user ? (
             <>
               <LogOut className="h-4 w-4" />
-              <span>{isLoggingOut ? "Déconnexion..." : "Déconnexion"}</span>
+              <span>Déconnexion</span>
             </>
           ) : (
             <>

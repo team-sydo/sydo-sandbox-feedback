@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus } from "lucide-react";
-import { useAuth, Guest } from "@/hooks/useAuth";
 
 interface GuestFormProps {
   projectId: string;
   onClose: () => void;
-  onSubmit: (guest: Guest) => void;
+  onSubmit: (guest: any) => void;
+}
+
+interface Guest {
+  id: string;
+  prenom: string;
+  nom: string;
+  poste?: string | null;
 }
 
 export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
@@ -21,13 +28,12 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
   const [lastName, setLastName] = useState("");
   const [position, setPosition] = useState("");
   const [device, setDevice] = useState<'mobile' | 'ordinateur' | 'tablette'>('ordinateur');
-  const [browser, setBrowser] = useState<'chrome' | 'edge' | 'firefox' | 'safari' | 'autre' | 'arc'>('chrome');
+  const [browser, setBrowser] = useState<'chrome' | 'edge' | 'firefox' | 'safari' | 'autre'>('chrome');
   const [loading, setLoading] = useState(false);
   const [existingGuests, setExistingGuests] = useState<Guest[]>([]);
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'new' | 'existing'>('new');
   const { toast } = useToast();
-  const { setGuestData } = useAuth();
 
   // Fetch existing guests for this project
   useEffect(() => {
@@ -36,7 +42,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Fetching guests for project:", projectId);
         const { data, error } = await supabase
           .from('guests')
-          .select('id, prenom, nom, poste, device, navigateur, project_id')
+          .select('id, prenom, nom, poste')
           .eq('project_id', projectId);
 
         if (error) {
@@ -46,7 +52,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
 
         console.log("Fetched guests:", data);
         if (data && data.length > 0) {
-          setExistingGuests(data as Guest[]);
+          setExistingGuests(data);
         }
       } catch (error) {
         console.error("Error in fetchGuests:", error);
@@ -72,9 +78,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Selected existing guest:", selectedGuest);
         
         if (selectedGuest) {
-          // Store the selected guest in the auth context
-          setGuestData(selectedGuest);
-          // Call the original onSubmit
+          // Use the existing guest data
           onSubmit(selectedGuest);
           onClose();
           return;
@@ -118,11 +122,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Created guest:", data);
         
         if (data && data.length > 0) {
-          // Store the new guest in the auth context
-          const newGuest = data[0] as Guest;
-          setGuestData(newGuest);
-          // Call the original onSubmit
-          onSubmit(newGuest);
+          onSubmit(data[0]);
           toast({
             title: "Succès",
             description: "Votre profil a été enregistré",
@@ -289,7 +289,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
                     <SelectItem value="firefox">Firefox</SelectItem>
                     <SelectItem value="safari">Safari</SelectItem>
                     <SelectItem value="autre">Autre</SelectItem>
-                    <SelectItem value="arc">Arc</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
