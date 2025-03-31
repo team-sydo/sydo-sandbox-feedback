@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
   const [lastName, setLastName] = useState("");
   const [position, setPosition] = useState("");
   const [device, setDevice] = useState<'mobile' | 'ordinateur' | 'tablette'>('ordinateur');
-  const [browser, setBrowser] = useState<'chrome' | 'edge' | 'firefox' | 'safari' | 'autre' | 'arc'>('chrome');
+  const [browser, setBrowser] = useState<'chrome' | 'edge' | 'firefox' | 'safari' | 'autre'>('chrome');
   const [loading, setLoading] = useState(false);
   const [existingGuests, setExistingGuests] = useState<Guest[]>([]);
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
@@ -36,7 +37,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Fetching guests for project:", projectId);
         const { data, error } = await supabase
           .from('guests')
-          .select('id, prenom, nom, poste, device, navigateur, project_id')
+          .select('id, prenom, nom, poste')
           .eq('project_id', projectId);
 
         if (error) {
@@ -46,7 +47,7 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
 
         console.log("Fetched guests:", data);
         if (data && data.length > 0) {
-          setExistingGuests(data as Guest[]);
+          setExistingGuests(data);
         }
       } catch (error) {
         console.error("Error in fetchGuests:", error);
@@ -119,10 +120,9 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         
         if (data && data.length > 0) {
           // Store the new guest in the auth context
-          const newGuest = data[0] as Guest;
-          setGuestData(newGuest);
+          setGuestData(data[0]);
           // Call the original onSubmit
-          onSubmit(newGuest);
+          onSubmit(data[0]);
           toast({
             title: "Succès",
             description: "Votre profil a été enregistré",
@@ -289,7 +289,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
                     <SelectItem value="firefox">Firefox</SelectItem>
                     <SelectItem value="safari">Safari</SelectItem>
                     <SelectItem value="autre">Autre</SelectItem>
-                    <SelectItem value="arc">Arc</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
