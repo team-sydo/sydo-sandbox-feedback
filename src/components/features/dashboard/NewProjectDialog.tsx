@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClientCombobox, ClientSelection } from "@/components/ClientCombobox";
+import { ClientCombobox, ClientSelection } from "@/components/core/ClientCombobox";
 
 interface NewProjectDialogProps {
   isOpen: boolean;
@@ -95,10 +95,11 @@ export function NewProjectDialog({ isOpen, onOpenChange, onProjectCreated }: New
       setSelectedClient(null);
       onProjectCreated();
       
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de créer le projet";
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de créer le projet",
+        description: message,
         variant: "destructive",
       });
     } finally {

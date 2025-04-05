@@ -14,7 +14,7 @@ interface FeedbackFormProps {
   onFeedbackSubmitted: () => void;
 }
 
-const FeedbackForm: React.FC<FeedbackFormProps> = ({
+export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   grainId,
   projectId,
   userId,
@@ -247,4 +247,4 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
     </div>;
 };
 
-export default FeedbackForm;
+

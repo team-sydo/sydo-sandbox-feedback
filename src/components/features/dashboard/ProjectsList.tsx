@@ -1,6 +1,6 @@
 
-import { ProjectCard } from "@/components/ProjectCard";
-import { Project } from "../types";
+import { ProjectCard } from "@/components/core/ProjectCard";
+import { Project } from "@/types/dashboard/types";
 
 export interface ProjectsListProps {
   projects: Project[];

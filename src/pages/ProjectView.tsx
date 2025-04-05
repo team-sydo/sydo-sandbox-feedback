@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { NavBar } from "@/components/NavBar";
+import { NavBar } from "@/components/layouts";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/card";
 import { ArrowLeft, Plus, MessageSquare, Link as LinkIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { GrainForm } from "@/components/GrainForm";
-import { GrainsList } from "@/components/GrainsList";
-import { GuestForm } from "@/components/GuestForm";
+import { GrainForm } from "@/components/features/grain";
+import { GrainsList } from "@/components/features/grain";
+import { GuestForm } from "@/components/features/auth";
 
 interface Project {
   id: string;
@@ -115,16 +115,13 @@ export default function ProjectView() {
         if (grainsError) throw grainsError;
 
         setGrains(grainsData || []);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching project details:", error);
-        setError(
-          error.message ||
-            "Une erreur s'est produite lors du chargement du projet"
-        );
+        const message = error instanceof Error ? error.message : "Une erreur s'est produite lors du chargement du projet";
+        setError(message);
         toast({
           title: "Erreur",
-          description:
-            error.message || "Impossible de charger les détails du projet",
+          description: message,
           variant: "destructive",
         });
       } finally {
@@ -135,7 +132,7 @@ export default function ProjectView() {
   }, [projectId, toast]);
 
   // Gérer l'ajout d'un nouveau grain
-  const handleAddGrain = (newGrain: Grain) => {
+  const handleAddGrain = useCallback((newGrain: Grain) => {
     setGrains((prev) => [newGrain, ...prev]);
     setIsGrainFormOpen(false);
 
@@ -143,10 +140,10 @@ export default function ProjectView() {
       title: "Succès",
       description: "Le nouveau grain a été ajouté",
     });
-  };
+  }, [toast]);
 
   // Gérer la mise à jour du statut d'un grain
-  const handleGrainStatusToggle = async (grainId: string, done: boolean) => {
+  const handleGrainStatusToggle = useCallback(async (grainId: string, done: boolean) => {
     try {
       const { error } = await supabase
         .from("grains")
@@ -166,25 +163,26 @@ export default function ProjectView() {
           ? "Grain marqué comme terminé"
           : "Grain marqué comme non terminé",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de mettre à jour le statut";
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de mettre à jour le statut",
+        description: message,
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   // Gérer la soumission du formulaire invité
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+  const handleGuestSubmit = useCallback((guest: Omit<Guest, "id">) => {
     setGuestCreated(true);
     setIsGuestFormOpen(false);
-
+    
     toast({
       title: "Bienvenue !",
       description: `Merci de votre participation, ${guest.prenom}`,
     });
-  };
+  }, [toast]);
 
   // Get user name for NavBar
   const userName = user

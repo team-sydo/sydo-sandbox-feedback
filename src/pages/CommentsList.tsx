@@ -2,14 +2,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { NavBar } from "@/components/NavBar";
+import { NavBar } from "@/components/layouts";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProjectComments } from "@/hooks/useProjectComments";
-import { CommentsFilters } from "@/components/comments/CommentsFilters";
-import { CommentsTable } from "@/components/comments/CommentsTable";
-import { formatTimecode } from "@/utils/formatting";
-import { GuestForm } from "@/components/GuestForm";
+import { CommentsFilters } from "@/components/features/comments";
+import { CommentsTable } from "@/components/features/comments";
+import { formatTimecode } from "@/lib/format-utils";
+import { GuestForm } from "@/components/features/auth";
 import { useToast } from "@/hooks/use-toast";
 
 interface Guest {

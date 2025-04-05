@@ -8,7 +8,7 @@ interface VideoPlayerProps {
   onTimeUpdate: (time: number) => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -107,4 +107,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, onTimeUpdate }) => {
   );
 };
 
-export default VideoPlayer;
+

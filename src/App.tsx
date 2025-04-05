@@ -1,8 +1,8 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
-import { Toaster } from './components/ui/toaster';
-import { ProtectedRoute, PublicRoute } from './components/RouteGuard';
+import { Toaster } from '@/components/ui/toaster';
+import { ProtectedRoute, PublicRoute } from '@/components/layouts/RouteGuard';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';

@@ -1,37 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { NavBar } from "@/components/NavBar";
+import { NavBar } from "@/components/layouts";
 import { ArrowLeft, MessageCircle } from "lucide-react";
-import FeedbackForm from "@/components/GrainView/FeedbackForm";
-import FeedbacksList from "@/components/GrainView/FeedbacksList";
-import VideoPlayer from "@/components/GrainView/VideoPlayer";
-import { GuestForm } from "@/components/GuestForm";
+import { FeedbackForm, FeedbacksList, VideoPlayer } from "@/components/features/grain";
+import { GuestForm } from "@/components/features/auth";
+import { Grain, GrainFeedback as Feedback } from "@/types";
 
-// Types
-interface Grain {
+interface Guest {
   id: string;
-  title: string;
-  type: "web" | "video";
-  url: string;
-  project_id: string;
-  project?: {
-    title: string;
-  };
-}
-
-interface Feedback {
-  id: string;
-  grain_id: string;
-  content: string;
-  timecode: number | null;
-  screenshot_url: string | null;
-  done: boolean;
-  user_id: string | null;
-  guest_id: string | null;
-  created_at: string;
+  nom: string;
 }
 
 export default function GrainView() {
@@ -43,73 +23,8 @@ export default function GrainView() {
   const [grain, setGrain] = useState<Grain | null>(null);
   const [guest, setGuest] = useState<Guest | null>(null);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [guestCreated, setGuestCreated] = useState(false);
-  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
 
-  // Références
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    // et qu'aucun invité n'a été créé pour cette session
-    if (!user && !guestCreated) {
-      setIsGuestFormOpen(true);
-    }
-  }, [user, guestCreated]);
-  useEffect(() => {
-    const fetchGrainDetails = async () => {
-      if (!grainId) return;
-
-      try {
-        setLoading(true);
-
-        // Récupérer les détails du grain
-        const { data: grainData, error: grainError } = await supabase
-          .from("grains")
-          .select(
-            `
-            *,
-            project:project_id (
-              title
-            )
-          `
-          )
-          .eq("id", grainId)
-          .single();
-
-        if (grainError) throw grainError;
-
-        setGrain(grainData);
-        // Récupérer les feedbacks du grain pour l'utilisateur actuel
-        if (user) {
-          await fetchFeedbacks();
-        }
-      } catch (error: any) {
-        toast({
-          title: "Erreur",
-          description: error.message || "Impossible de charger les détails",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGrainDetails();
-  }, [grainId, user, toast]);
-  
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
-    setGuestCreated(true);
-    setIsGuestFormOpen(false);
-
-    toast({
-      title: "Bienvenue !",
-      description: `Merci de votre participation, ${guest.prenom}`,
-    });
-  };
-  const fetchFeedbacks = async () => {
+  const fetchFeedbacks = useCallback(async () => {
     if (!grainId || !user) return;
 
     try {
@@ -118,16 +33,86 @@ export default function GrainView() {
         .select("*")
         .eq("grain_id", grainId)
         .eq("user_id", user.id)
-        .eq("guest_id", guest.id)
+        .eq("guest_id", guest?.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
 
       setFeedbacks(feedbacksData || []);
-    } catch (error: any) {
-      console.error("Erreur lors du chargement des feedbacks:", error);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur inconnue";
+      console.error("Erreur lors du chargement des feedbacks:", message);
     }
+  }, [grainId, user, guest?.id]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [guestCreated, setGuestCreated] = useState(false);
+  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
+
+  // Références
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const fetchGrainDetails = useCallback(async () => {
+    if (!grainId) return;
+
+    try {
+      setLoading(true);
+
+      // Récupérer les détails du grain
+      const { data: grainData, error: grainError } = await supabase
+        .from("grains")
+        .select(
+          `
+          *,
+          project:project_id (
+            title
+          )
+        `
+        )
+        .eq("id", grainId)
+        .single();
+
+      if (grainError) throw grainError;
+
+      setGrain(grainData);
+      // Récupérer les feedbacks du grain pour l'utilisateur actuel
+      if (user) {
+        await fetchFeedbacks();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de charger les détails";
+      toast({
+        title: "Erreur",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [grainId, user, toast, fetchFeedbacks]);
+
+  useEffect(() => {
+    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
+    // et qu'aucun invité n'a été créé pour cette session
+    if (!user && !guestCreated) {
+      setIsGuestFormOpen(true);
+    }
+  }, [user, guestCreated]);
+
+  useEffect(() => {
+    fetchGrainDetails();
+  }, [fetchGrainDetails]);
+  
+  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+    setGuestCreated(true);
+    setIsGuestFormOpen(false);
+
+    toast({
+      title: "Bienvenue !",
+      description: `Merci de votre participation, ${guest.nom}`,
+    });
   };
+
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time);
@@ -160,10 +145,11 @@ export default function GrainView() {
           ? "Le feedback a été marqué comme non résolu"
           : "Le feedback a été marqué comme résolu",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de mettre à jour le statut";
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de mettre à jour le statut",
+        description: message,
         variant: "destructive",
       });
     }

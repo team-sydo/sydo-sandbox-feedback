@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { SydoLogo } from '@/components/SydoLogo';
+import { SydoLogo } from '@/components/core';
 
 const Index = () => {
   const { user, loading } = useAuth();

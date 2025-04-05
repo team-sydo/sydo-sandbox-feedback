@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Project } from "./types";
-import { NavBar } from "@/components/NavBar";
-import { ProjectsList } from "./components/ProjectsList";
+import { Project } from "@/types/dashboard/types";
+import { NavBar } from "@/components/layouts";
+import { ProjectsList } from "@/components/features/dashboard/ProjectsList";
 import { useToast } from "@/hooks/use-toast";
-import { NewProjectDialog } from "./components/NewProjectDialog";
+import { NewProjectDialog } from "@/components/features/dashboard/NewProjectDialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,7 @@ export default function Dashboard() {
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  // Récupérer les projets de l'utilisateur au chargement
-  useEffect(() => {
-    fetchProjects();
-  }, [user, toast]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -75,19 +70,27 @@ export default function Dashboard() {
       }
       
       setProjects(projectsWithCounts);
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de charger les projets";
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de charger les projets",
+        description: message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
+
+  // Récupérer les projets de l'utilisateur au chargement
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+
 
   // Fonction pour supprimer un projet
-  const handleDeleteProject = async (projectId: string) => {
+  const handleDeleteProject = useCallback(async (projectId: string) => {
     if (!user) return;
     
     try {
@@ -111,22 +114,23 @@ export default function Dashboard() {
       if (projectError) throw projectError;
       
       // Mettre à jour la liste des projets
-      setProjects(projects.filter(project => project.id !== projectId));
+      setProjects(projects => projects.filter(project => project.id !== projectId));
       
       toast({
         title: "Projet supprimé",
         description: "Le projet a été supprimé avec succès",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de supprimer le projet";
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de supprimer le projet",
+        description: message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   // Filtrer les projets en fonction du filtre sélectionné
   const filteredProjects = projects.filter((project) => {
@@ -137,13 +141,13 @@ export default function Dashboard() {
   });
 
   // Gérer la création d'un nouveau projet
-  const handleProjectCreated = () => {
+  const handleProjectCreated = useCallback(() => {
     setIsNewProjectDialogOpen(false);
     // Recharger les projets
     if (user) {
       fetchProjects();
     }
-  };
+  }, [user, fetchProjects]);
 
   // Get user name for NavBar
   const userName = user ? `${user.user_metadata.prenom} ${user.user_metadata.nom}` : "";

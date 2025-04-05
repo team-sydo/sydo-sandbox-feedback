@@ -1,10 +1,10 @@
 
 import { useState } from "react";
-import { SydoLogo } from "./SydoLogo";
+import { SydoLogo } from "@/components/core/SydoLogo";
 import { Button } from "@/components/ui/button";
 import { LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { LoginModal } from "./LoginModal";
+import { LoginModal } from "@/components/features/auth/LoginModal";
 
 interface NavBarProps {
   userName: string;

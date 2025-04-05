@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FileText, Video, MessageSquare, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -44,6 +44,7 @@ export function ProjectCard({
   onDelete,
 }: ProjectCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleDelete = (e: React.MouseEvent) => {
     // e.stopPropagation();
@@ -84,11 +85,17 @@ export function ProjectCard({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/project/${id}/comments`}>
-                  <MessageSquare className="h-4 w-4 mr-1" />
-                  Retours
-                </Link>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate(`/project/${id}/comments`);
+                }}
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Retours
               </Button>
               {sites + videos === 0 ? 
               <Button variant="destructive" size="sm" onClick={handleDelete}>

@@ -19,7 +19,7 @@ interface FeedbacksListProps {
   onClose: () => void;
 }
 
-const FeedbacksList: React.FC<FeedbacksListProps> = ({ 
+export const FeedbacksList: React.FC<FeedbacksListProps> = ({ 
   feedbacks, 
   onToggleStatus,
   onClose
@@ -94,5 +94,3 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
     </div>
   );
 };
-
-export default FeedbacksList;

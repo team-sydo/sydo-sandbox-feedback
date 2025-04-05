@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SydoLogo } from "@/components/SydoLogo";
+import { SydoLogo } from "@/components/core/SydoLogo";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
