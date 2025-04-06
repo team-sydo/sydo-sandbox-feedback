@@ -10,14 +10,16 @@ import { NewProjectDialog } from "./components/NewProjectDialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useFavorites } from "@/hooks/useFavorites";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'active' | 'archived'>('all');
+  const [filter, setFilter] = useState<'all' | 'active' | 'archived' | 'favorites'>('all');
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { favoriteProjectIds, toggleFavorite, isFavorite } = useFavorites();
 
   // Récupérer les projets de l'utilisateur au chargement
   useEffect(() => {
@@ -133,6 +135,7 @@ export default function Dashboard() {
     if (filter === 'all') return true;
     if (filter === 'active') return project.active;
     if (filter === 'archived') return !project.active;
+    if (filter === 'favorites') return favoriteProjectIds.includes(project.id);
     return true;
   });
 
@@ -143,6 +146,11 @@ export default function Dashboard() {
     if (user) {
       fetchProjects();
     }
+  };
+
+  // Handle toggling favorites
+  const handleToggleFavorite = (projectId: string) => {
+    toggleFavorite(projectId);
   };
 
   // Get user name for NavBar
@@ -156,10 +164,11 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold">Projets</h1>
             <div className="mt-4">
-              <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value as 'all' | 'active' | 'archived')}>
+              <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value as 'all' | 'active' | 'archived' | 'favorites')}>
                 <ToggleGroupItem value="all">Tous</ToggleGroupItem>
                 <ToggleGroupItem value="active">Actifs</ToggleGroupItem>
                 <ToggleGroupItem value="archived">Archivés</ToggleGroupItem>
+                <ToggleGroupItem value="favorites">Favoris</ToggleGroupItem>
               </ToggleGroup>
             </div>
           </div>
@@ -171,6 +180,8 @@ export default function Dashboard() {
           projects={filteredProjects} 
           loading={loading} 
           onDeleteProject={handleDeleteProject}
+          onToggleFavorite={handleToggleFavorite}
+          favoriteProjectIds={favoriteProjectIds}
         />
       </main>
 

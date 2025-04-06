@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Video, MessageSquare, Trash2 } from "lucide-react";
+import { FileText, Video, MessageSquare, Trash2, Star } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,8 @@ interface ProjectCardProps {
   videos: number;
   status: "actif" | "archivé";
   onDelete?: (id: string) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
 }
 
 export function ProjectCard({
@@ -42,6 +45,8 @@ export function ProjectCard({
   videos,
   status,
   onDelete,
+  isFavorite = false,
+  onToggleFavorite,
 }: ProjectCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -52,6 +57,14 @@ export function ProjectCard({
       onDelete(id);
     }
     setIsOpen(false);
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(id);
+    }
   };
 
   // Pour éviter la propagation du clic sur le bouton de suppression au lien parent
@@ -66,9 +79,23 @@ export function ProjectCard({
         <CardHeader className="bg-gray-50 pb-4">
           <div className="flex justify-between items-start">
             <CardTitle className="text-xl">{title}</CardTitle>
-            <Badge variant={status === "actif" ? "success" : "destructive"}>
-              {status === "actif" ? "Actif" : "Archivé"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={status === "actif" ? "success" : "destructive"}>
+                {status === "actif" ? "Actif" : "Archivé"}
+              </Badge>
+              {onToggleFavorite && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-0 h-auto" 
+                  onClick={handleFavoriteClick}
+                >
+                  <Star 
+                    className={`h-5 w-5 ${isFavorite ? "text-yellow-400 fill-yellow-400" : "text-gray-400"}`} 
+                  />
+                </Button>
+              )}
+            </div>
           </div>
           <p className="text-gray-600 text-sm h-10 overflow-hidden">{client}</p>
           <p className="text-gray-600 text-sm h-10 overflow-hidden">
@@ -97,29 +124,6 @@ export function ProjectCard({
             </div>
           </div>
         </CardContent>
-        {/* <CardFooter className="bg-gray-50 justify-end gap-2">
-          <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-            <AlertDialogTrigger asChild onClick={handleDeleteClick}>
-              <Button variant="destructive" size="sm">
-                <Trash2 className="h-4 w-4 mr-1" />
-                Supprimer
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action ne peut pas être annulée. Cela supprimera définitivement le projet
-                  "{title}" et tous les grains associés.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Supprimer</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardFooter> */}
       </Card>
     </Link>
   );

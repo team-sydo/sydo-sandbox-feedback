@@ -6,9 +6,17 @@ export interface ProjectsListProps {
   projects: Project[];
   loading: boolean;
   onDeleteProject?: (id: string) => void;
+  onToggleFavorite?: (id: string) => void;
+  favoriteProjectIds?: string[];
 }
 
-export function ProjectsList({ projects = [], loading, onDeleteProject }: ProjectsListProps) {
+export function ProjectsList({ 
+  projects = [], 
+  loading, 
+  onDeleteProject,
+  onToggleFavorite,
+  favoriteProjectIds = [] 
+}: ProjectsListProps) {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -41,6 +49,8 @@ export function ProjectsList({ projects = [], loading, onDeleteProject }: Projec
           videos={project.videos || 0}
           status={project.active ? "actif" : "archivé"}
           onDelete={onDeleteProject}
+          onToggleFavorite={onToggleFavorite}
+          isFavorite={favoriteProjectIds.includes(project.id)}
         />
       ))}
     </div>

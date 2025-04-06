@@ -9,3 +9,11 @@ export interface Guest {
   navigateur: "chrome" | "edge" | "firefox" | "safari" | "autre";
   project_id: string;
 }
+
+// Define interface for favorites
+export interface Favorite {
+  id: string;
+  user_id: string;
+  project_id: string;
+  created_at: string;
+}

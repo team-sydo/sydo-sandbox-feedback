@@ -239,6 +239,35 @@ export type Database = {
           },
         ]
       }
+      user_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           device: Database["public"]["Enums"]["device_type"] | null
@@ -276,7 +305,7 @@ export type Database = {
     Enums: {
       browser_type: "chrome" | "edge" | "firefox" | "safari" | "autre" | "arc"
       device_type: "mobile" | "ordinateur" | "tablette"
-      grain_type: "web" | "video"
+      grain_type: "web" | "video" | "figma" | "GSlide"
     }
     CompositeTypes: {
       [_ in never]: never
