@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
@@ -31,7 +31,6 @@ export default function CommentsList() {
   const [displayActions, setDisplayActions] = useState(true);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-  
   const {
     loading,
     projectTitle,
@@ -53,27 +52,18 @@ export default function CommentsList() {
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
     : "";
-  
-  // Cette fonction sera appelée lors du chargement initial et lorsque le grain sélectionné change
-  const loadFeedbacksWithParams = useCallback(async () => {
-    if (loading || !grains.length) return;
-
-    const grainFromUrl = searchParams.get("grain");
-    if (grainFromUrl) {
-      // Appliquer le filtre de grain
-      await setSelectedGrainId(grainFromUrl);
-      // Explicitement déclencher une récupération des commentaires après avoir défini le grain
-      await fetchFeedbacks();
-    }
-    setInitialLoadDone(true);
-  }, [searchParams, loading, grains, setSelectedGrainId, fetchFeedbacks]);
-  
-  // Gestion du chargement initial avec les paramètres URL
+    
+  // Handle initial page load with URL params
   useEffect(() => {
-    if (!initialLoadDone) {
-      loadFeedbacksWithParams();
+    if (!loading && grains.length > 0 && !initialLoadDone) {
+      const grainFromUrl = searchParams.get("grain");
+      if (grainFromUrl) {
+        setSelectedGrainId(grainFromUrl);
+        fetchFeedbacks();
+      }
+      setInitialLoadDone(true);
     }
-  }, [initialLoadDone, loadFeedbacksWithParams]);
+  }, [loading, grains, initialLoadDone, searchParams, setSelectedGrainId, fetchFeedbacks]);
   
   useEffect(() => {
     // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
@@ -96,15 +86,13 @@ export default function CommentsList() {
     });
   };
 
-  // Cette fonction sera appelée par CommentsFilters lorsqu'un grain est sélectionné depuis l'URL
-  const handleInitialGrainIdChange = useCallback(async (grainId: string | null) => {
+  // Handle initial grain ID change from URL
+  const handleInitialGrainIdChange = (grainId: string | null) => {
     if (grainId && !initialLoadDone) {
-      // S'assurer que le grain est défini avant de récupérer les commentaires
-      console.log("Initial grain ID change detected:", grainId);
-      await fetchFeedbacks();
+      fetchFeedbacks();
       setInitialLoadDone(true);
     }
-  }, [initialLoadDone, fetchFeedbacks]);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">

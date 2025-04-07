@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -78,7 +78,7 @@ export function useProjectComments(projectId: string | undefined) {
       if (grainsError) throw grainsError;
       if (grainsData) setGrains(grainsData);
 
-      setLoading(false);
+      await fetchFeedbacks();
     } catch (error: any) {
       console.error("Erreur lors du chargement des données:", error);
       toast({
@@ -86,22 +86,15 @@ export function useProjectComments(projectId: string | undefined) {
         description: "Impossible de charger les données du projet",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
 
-  const fetchFeedbacks = useCallback(async () => {
+  const fetchFeedbacks = async () => {
     if (!projectId) return;
 
     try {
-      console.log("Fetching feedbacks with filters:", { 
-        selectedGrainId, 
-        statusFilter, 
-        selectedAuthorId 
-      });
-      
-      setLoading(true);
-      
       let query = supabase
         .from("feedbacks")
         .select(
@@ -214,10 +207,8 @@ export function useProjectComments(projectId: string | undefined) {
         description: "Impossible de charger les commentaires",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
-  }, [projectId, selectedGrainId, statusFilter, selectedAuthorId, authors, toast]);
+  };
 
   const toggleFeedbackStatus = async (
     feedbackId: string,
@@ -317,7 +308,11 @@ export function useProjectComments(projectId: string | undefined) {
 
   useEffect(() => {
     fetchProjectData();
-  }, [projectId]);
+  }, [projectId, toast]);
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [selectedGrainId, statusFilter, selectedAuthorId, projectId]);
 
   return {
     loading,
