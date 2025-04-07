@@ -128,7 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       toast({
         title: "Déconnexion réussie",
         description: "À bientôt !",

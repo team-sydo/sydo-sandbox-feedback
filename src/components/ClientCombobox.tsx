@@ -51,7 +51,6 @@ export function ClientCombobox({
         const { data, error } = await supabase
           .from("clients")
           .select("id, nom")
-          .eq("user_id", user.id)
           .order("nom");
 
         if (error) throw error;
