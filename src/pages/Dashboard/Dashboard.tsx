@@ -21,7 +21,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { favoriteProjectIds, toggleFavorite, isFavorite } = useFavorites();
 
-  // Récupérer les projets de l'utilisateur au chargement
+  // Récupérer tous les projets au chargement
   useEffect(() => {
     fetchProjects();
   }, [user, toast]);
@@ -32,14 +32,13 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      // Requête pour récupérer les projets
+      // Requête pour récupérer tous les projets sans filtre sur user_id
       const { data, error } = await supabase
         .from('projects')
         .select(`
           *,
           clients (id, nom)
         `)
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -108,7 +107,7 @@ export default function Dashboard() {
         .from('projects')
         .delete()
         .eq('id', projectId)
-        .eq('user_id', user.id);  // Sécurité supplémentaire
+        .eq('user_id', user.id);  // L'utilisateur ne peut supprimer que ses propres projets
         
       if (projectError) throw projectError;
       
