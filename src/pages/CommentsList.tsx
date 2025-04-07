@@ -1,6 +1,6 @@
 
-import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
 import { ArrowLeft } from "lucide-react";
@@ -24,11 +24,13 @@ interface Guest {
 
 export default function CommentsList() {
   const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [guestCreated, setGuestCreated] = useState(false);
   const [displayActions, setDisplayActions] = useState(true);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const {
     loading,
     projectTitle,
@@ -46,9 +48,23 @@ export default function CommentsList() {
     deleteFeedback,
     fetchFeedbacks,
   } = useProjectComments(projectId);
+  
   const userName = user
-  ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-  : "";
+    ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
+    : "";
+    
+  // Handle initial page load with URL params
+  useEffect(() => {
+    if (!loading && grains.length > 0 && !initialLoadDone) {
+      const grainFromUrl = searchParams.get("grain");
+      if (grainFromUrl) {
+        setSelectedGrainId(grainFromUrl);
+        fetchFeedbacks();
+      }
+      setInitialLoadDone(true);
+    }
+  }, [loading, grains, initialLoadDone, searchParams, setSelectedGrainId, fetchFeedbacks]);
+  
   useEffect(() => {
     // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
     // et qu'aucun invité n'a été créé pour cette session
@@ -68,6 +84,14 @@ export default function CommentsList() {
       title: "Bienvenue !",
       description: `Merci de votre participation, ${guest.prenom}`,
     });
+  };
+
+  // Handle initial grain ID change from URL
+  const handleInitialGrainIdChange = (grainId: string | null) => {
+    if (grainId && !initialLoadDone) {
+      fetchFeedbacks();
+      setInitialLoadDone(true);
+    }
   };
 
   return (
@@ -97,6 +121,7 @@ export default function CommentsList() {
             selectedAuthorId={selectedAuthorId}
             setSelectedAuthorId={setSelectedAuthorId}
             onRefresh={fetchFeedbacks}
+            onInitialGrainIdChange={handleInitialGrainIdChange}
           />
 
           {loading ? (

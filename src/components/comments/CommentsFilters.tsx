@@ -22,6 +22,7 @@ interface CommentsFiltersProps {
   selectedAuthorId: string | null;
   setSelectedAuthorId: (id: string | null) => void;
   onRefresh: () => void;
+  onInitialGrainIdChange?: (grainId: string | null) => void;
 }
 
 export function CommentsFilters({
@@ -33,7 +34,8 @@ export function CommentsFilters({
   setStatusFilter,
   selectedAuthorId,
   setSelectedAuthorId,
-  onRefresh
+  onRefresh,
+  onInitialGrainIdChange
 }: CommentsFiltersProps) {
   const [searchParams] = useSearchParams();
   
@@ -41,8 +43,12 @@ export function CommentsFilters({
     const grainFromUrl = searchParams.get("grain");
     if (grainFromUrl) {
       setSelectedGrainId(grainFromUrl);
+      // Call the callback to notify parent component about initial grain ID
+      if (onInitialGrainIdChange) {
+        onInitialGrainIdChange(grainFromUrl);
+      }
     }
-  }, [searchParams, setSelectedGrainId]);
+  }, [searchParams, setSelectedGrainId, onInitialGrainIdChange]);
 
   return (
     <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
