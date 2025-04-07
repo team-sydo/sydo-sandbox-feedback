@@ -42,9 +42,12 @@ export function CommentsFilters({
   useEffect(() => {
     const grainFromUrl = searchParams.get("grain");
     if (grainFromUrl) {
+      // Mettre à jour l'ID du grain sélectionné
       setSelectedGrainId(grainFromUrl);
-      // Call the callback to notify parent component about initial grain ID
+      
+      // Appeler le callback pour notifier le composant parent du changement initial d'ID de grain
       if (onInitialGrainIdChange) {
+        console.log("Notifying parent of grain ID change:", grainFromUrl);
         onInitialGrainIdChange(grainFromUrl);
       }
     }
