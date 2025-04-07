@@ -17,3 +17,13 @@ export interface Favorite {
   project_id: string;
   created_at: string;
 }
+
+// Define Grain interface
+export interface Grain {
+  id: string;
+  title: string;
+  type: "web" | "video" | "figma" | "GSlide";
+  url: string;
+  done: boolean;
+  project_id: string;
+}

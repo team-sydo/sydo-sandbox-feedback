@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { GrainForm } from "@/components/GrainForm";
 import { GrainsList } from "@/components/GrainsList";
 import { GuestForm } from "@/components/GuestForm";
-import { Guest } from "@/types";
+import { Grain, Guest } from "@/types";
 
 interface Project {
   id: string;
@@ -25,25 +25,6 @@ interface Project {
   description: string | null;
   client_name?: string | null;
   active: boolean;
-}
-
-interface Grain {
-  id: string;
-  title: string;
-  type: "web" | "video";
-  url: string;
-  done: boolean;
-  project_id: string;
-}
-
-interface Guest {
-  id: string;
-  prenom: string;
-  nom: string;
-  poste: string | null;
-  device: "mobile" | "ordinateur" | "tablette";
-  navigateur: "chrome" | "edge" | "firefox" | "safari" | "autre";
-  project_id: string;
 }
 
 export default function ProjectView() {

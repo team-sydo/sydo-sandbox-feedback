@@ -9,19 +9,9 @@ import FeedbackForm from "@/components/GrainView/FeedbackForm";
 import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
 import { GuestForm } from "@/components/GuestForm";
+import { Grain, Guest } from "@/types";
 
 // Types
-interface Grain {
-  id: string;
-  title: string;
-  type: "web" | "video";
-  url: string;
-  project_id: string;
-  project?: {
-    title: string;
-  };
-}
-
 interface Feedback {
   id: string;
   grain_id: string;

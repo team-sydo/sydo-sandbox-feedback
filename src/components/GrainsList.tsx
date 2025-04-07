@@ -1,4 +1,3 @@
-
 import { Eye, CheckCircle, ExternalLink, MessageSquare, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -21,15 +20,7 @@ import {
 import { EditGrainForm } from "@/components/EditGrainForm";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Grain {
-  id: string;
-  title: string;
-  type: 'web' | 'video';
-  url: string;
-  done: boolean;
-  project_id: string;
-}
+import { Grain } from "@/types";
 
 interface GrainsListProps {
   grains: Grain[];

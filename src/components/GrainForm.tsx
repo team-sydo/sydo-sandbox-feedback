@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,15 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Grain {
-  id: string;
-  title: string;
-  type: 'web' | 'video';
-  url: string;
-  done: boolean;
-  project_id: string;
-}
+import { Grain } from "@/types";
 
 interface GrainFormProps {
   projectId: string;
@@ -25,7 +16,7 @@ interface GrainFormProps {
 
 export function GrainForm({ projectId, onClose, onSubmit }: GrainFormProps) {
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<'web' | 'video'>('web');
+  const [type, setType] = useState<Grain['type']>('web');
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -108,7 +99,7 @@ export function GrainForm({ projectId, onClose, onSubmit }: GrainFormProps) {
             <Label>Type d'élément</Label>
             <RadioGroup
               value={type}
-              onValueChange={(value) => setType(value as 'web' | 'video')}
+              onValueChange={(value) => setType(value as Grain['type'])}
               className="flex space-x-4"
             >
               <div className="flex items-center space-x-2">
