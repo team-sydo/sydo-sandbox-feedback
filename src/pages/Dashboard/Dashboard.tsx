@@ -32,7 +32,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      console.log("Fetching all projects...");
+      console.log("Fetching all projects from dashboard...");
       
       // Requête pour récupérer tous les projets sans filtre sur user_id
       const { data, error } = await supabase
@@ -114,8 +114,8 @@ export default function Dashboard() {
       const { error: projectError } = await supabase
         .from('projects')
         .delete()
-        .eq('id', projectId)
-        .eq('user_id', user.id);  // L'utilisateur ne peut supprimer que ses propres projets
+        .eq('id', projectId);
+        // Removed the user_id filter to allow deletion of any project
         
       if (projectError) throw projectError;
       
