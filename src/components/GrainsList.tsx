@@ -1,3 +1,4 @@
+
 import { Eye, CheckCircle, ExternalLink, MessageSquare, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -130,7 +131,7 @@ export function GrainsList({
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" asChild>
-                    <Link to={`/project/${grain.project_id}/comments`}>
+                    <Link to={`/project/${grain.project_id}/comments?grain=${grain.id}`}>
                       <MessageSquare className="h-4 w-4 mr-1" />
                       Retours
                     </Link>

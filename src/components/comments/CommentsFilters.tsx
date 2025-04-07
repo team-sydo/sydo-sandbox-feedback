@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { type Grain, type Author } from "@/hooks/useProjectComments";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 interface CommentsFiltersProps {
   grains: Grain[];
@@ -33,6 +35,15 @@ export function CommentsFilters({
   setSelectedAuthorId,
   onRefresh
 }: CommentsFiltersProps) {
+  const [searchParams] = useSearchParams();
+  
+  useEffect(() => {
+    const grainFromUrl = searchParams.get("grain");
+    if (grainFromUrl) {
+      setSelectedGrainId(grainFromUrl);
+    }
+  }, [searchParams, setSelectedGrainId]);
+
   return (
     <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
       <div className="flex gap-4 flex-col sm:flex-row">
@@ -87,7 +98,6 @@ export function CommentsFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les auteurs</SelectItem>
-              {/* <SelectItem value="users">Tous les utilisateurs</SelectItem> */}
               {authors.map((author) => (
                 <SelectItem key={author.id} value={author.id}>
                   {author.name}
@@ -97,20 +107,6 @@ export function CommentsFilters({
           </Select>
         </div>
       </div>
-{/* 
-      <SelectContent>
-              <SelectItem value="all">Tous les auteurs</SelectItem>
-              <SelectItem value="users">Tous les utilisateurs</SelectItem>
-              {authors
-                .filter((author) => author.type === "user")
-                .map((author) => (
-                  <SelectItem key={author.id} value={author.id}>
-                    {author.name}
-                  </SelectItem>
-                ))}
-            </SelectContent> */}
-
-
 
       <Button variant="outline" onClick={onRefresh}>
         <Filter className="h-4 w-4 mr-2" />
