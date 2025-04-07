@@ -32,6 +32,8 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
+      console.log("Fetching all projects...");
+      
       // Requête pour récupérer tous les projets sans filtre sur user_id
       const { data, error } = await supabase
         .from('projects')
@@ -41,8 +43,13 @@ export default function Dashboard() {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching projects:", error);
+        throw error;
+      }
 
+      console.log("Projects fetched:", data?.length || 0);
+      
       // Ajouter manuellement le comptage des sites et vidéos
       const projectsWithCounts: Project[] = [];
       
@@ -76,6 +83,7 @@ export default function Dashboard() {
       }
       
       setProjects(projectsWithCounts);
+      console.log("Projects with counts:", projectsWithCounts.length);
     } catch (error: any) {
       toast({
         title: "Erreur",

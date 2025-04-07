@@ -26,4 +26,9 @@ export interface Grain {
   url: string;
   done: boolean;
   project_id: string;
+  project?: {
+    title: string;
+  };
+  created_at?: string;
+  updated_at?: string;
 }

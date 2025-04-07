@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,7 @@ export function GrainForm({ projectId, onClose, onSubmit }: GrainFormProps) {
       if (error) throw error;
 
       if (data) {
-        onSubmit(data);
+        onSubmit(data as Grain);
       }
     } catch (error: any) {
       toast({
@@ -100,7 +101,7 @@ export function GrainForm({ projectId, onClose, onSubmit }: GrainFormProps) {
             <RadioGroup
               value={type}
               onValueChange={(value) => setType(value as Grain['type'])}
-              className="flex space-x-4"
+              className="flex flex-wrap gap-4"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="web" id="web" />
@@ -109,6 +110,14 @@ export function GrainForm({ projectId, onClose, onSubmit }: GrainFormProps) {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="video" id="video" />
                 <Label htmlFor="video">Vidéo</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="figma" id="figma" />
+                <Label htmlFor="figma">Figma</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="GSlide" id="gslide" />
+                <Label htmlFor="gslide">Google Slide</Label>
               </div>
             </RadioGroup>
           </div>

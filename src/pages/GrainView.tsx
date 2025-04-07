@@ -71,7 +71,11 @@ export default function GrainView() {
 
         if (grainError) throw grainError;
 
-        setGrain(grainData);
+        setGrain({
+          ...grainData,
+          project: grainData.project
+        });
+        
         // Récupérer les feedbacks du grain pour l'utilisateur actuel
         if (user) {
           await fetchFeedbacks();
@@ -108,7 +112,7 @@ export default function GrainView() {
         .select("*")
         .eq("grain_id", grainId)
         .eq("user_id", user.id)
-        .eq("guest_id", guest.id)
+        .eq("guest_id", guest?.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
@@ -245,16 +249,6 @@ export default function GrainView() {
                 onFeedbackSubmitted={fetchFeedbacks}
               />
             )}
-            {/* {!user && grain && (
-              <FeedbackForm
-                grainId={grain.id}
-                projectId={grain.project_id}
-                userId={user.id}
-                currentTime={grain.type === "video" ? currentTime : null}
-                isVideoType={grain.type === "video"}
-                onFeedbackSubmitted={fetchFeedbacks}
-              />
-            )} */}
           </div>
         </div>
         {/* Sidebar pour les feedbacks */}
