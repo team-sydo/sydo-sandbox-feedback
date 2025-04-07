@@ -48,14 +48,12 @@ export function ProjectCard({
   isFavorite = false,
   onToggleFavorite,
 }: ProjectCardProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (onDelete) {
       onDelete(id);
     }
-    setIsOpen(false);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -115,11 +113,7 @@ export function ProjectCard({
                   <Button 
                     variant="destructive" 
                     size="sm" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDelete(e);
-                    }}
+                    onClick={handleDelete}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                   </Button>
