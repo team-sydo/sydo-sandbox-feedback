@@ -34,7 +34,7 @@ export default function Dashboard() {
       
       console.log("Fetching all projects from dashboard...");
       
-      // Requête pour récupérer tous les projets sans aucun filtre
+      // Requête pour récupérer tous les projets sans filtre sur user_id
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -50,45 +50,40 @@ export default function Dashboard() {
 
       console.log("Projects fetched:", data?.length || 0);
       
-      // Traiter les données récupérées
-      if (data && data.length > 0) {
-        // Ajouter manuellement le comptage des sites et vidéos
-        const projectsWithCounts: Project[] = [];
-        
-        for (const project of data) {
-          // Compter les grains de type 'web'
-          const { count: sitesCount, error: sitesError } = await supabase
-            .from('grains')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .eq('type', 'web');
-            
-          // Compter les grains de type 'video'
-          const { count: videosCount, error: videosError } = await supabase
-            .from('grains')
-            .select('id', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .eq('type', 'video');
-            
-          if (sitesError) console.error("Error counting sites:", sitesError);
-          if (videosError) console.error("Error counting videos:", videosError);
+      // Ajouter manuellement le comptage des sites et vidéos
+      const projectsWithCounts: Project[] = [];
+      
+      for (const project of (data || [])) {
+        // Compter les grains de type 'web'
+        const { count: sitesCount, error: sitesError } = await supabase
+          .from('grains')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .eq('type', 'web');
           
-          // Créer un nouvel objet avec toutes les propriétés typées correctement
-          const projectWithCounts: Project = {
-            ...project,
-            sites: sitesCount || 0,
-            videos: videosCount || 0,
-            client_name: project.clients ? project.clients.nom : null
-          };
+        // Compter les grains de type 'video'
+        const { count: videosCount, error: videosError } = await supabase
+          .from('grains')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .eq('type', 'video');
           
-          projectsWithCounts.push(projectWithCounts);
-        }
+        if (sitesError) console.error("Error counting sites:", sitesError);
+        if (videosError) console.error("Error counting videos:", videosError);
         
-        setProjects(projectsWithCounts);
-        console.log("Projects with counts:", projectsWithCounts.length);
-      } else {
-        setProjects([]);
+        // Créer un nouvel objet avec toutes les propriétés typées correctement
+        const projectWithCounts: Project = {
+          ...project,
+          sites: sitesCount || 0,
+          videos: videosCount || 0,
+          client_name: project.clients ? project.clients.nom : null
+        };
+        
+        projectsWithCounts.push(projectWithCounts);
       }
+      
+      setProjects(projectsWithCounts);
+      console.log("Projects with counts:", projectsWithCounts.length);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -120,6 +115,7 @@ export default function Dashboard() {
         .from('projects')
         .delete()
         .eq('id', projectId);
+        // Removed the user_id filter to allow deletion of any project
         
       if (projectError) throw projectError;
       
