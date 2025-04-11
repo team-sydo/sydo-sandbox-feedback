@@ -215,6 +215,11 @@ export function CommentsTable({
     }
   };
 
+  // Handle checkbox change
+  const handleCheckboxChange = async (feedbackId: string, currentStatus: boolean) => {
+    await toggleFeedbackStatus(feedbackId, currentStatus);
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -226,11 +231,12 @@ export function CommentsTable({
             <TableHead>Commentaire</TableHead>
             <TableHead>Capture</TableHead>
             {displayActions && <TableHead className="w-16">Actions</TableHead>}
+            <TableHead className="w-16 text-center">Statut</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {feedbacks.map((feedback, index) => (
-            <TableRow key={feedback.id}>
+            <TableRow key={feedback.id} className={feedback.done ? "bg-green-50" : ""}>
               <TableCell>{index + 1}</TableCell>
               <TableCell>{getGrainTitle(feedback)}</TableCell>
               <TableCell>
@@ -310,16 +316,25 @@ export function CommentsTable({
                   >
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
-                  <Checkbox 
-                    className="m-2"
-                    checked={feedback.done}
-                    onCheckedChange={() =>
-                      toggleFeedbackStatus(feedback.id, feedback.done)
-                    }
-                    aria-label={feedback.done ? "Marquer comme non traité" : "Marquer comme traité"}
-                  />
                 </div>
               </TableCell>}
+              <TableCell className="text-center">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Checkbox 
+                        className="m-2"
+                        checked={feedback.done}
+                        onCheckedChange={() => handleCheckboxChange(feedback.id, feedback.done)}
+                        aria-label={feedback.done ? "Marquer comme non traité" : "Marquer comme traité"}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {feedback.done ? "Commentaire traité" : "Marquer comme traité"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
