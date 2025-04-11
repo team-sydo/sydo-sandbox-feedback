@@ -111,7 +111,11 @@ async function processRawFeedbacks(rawFeedbacks: any[]): Promise<Feedback[]> {
       
     if (usersData) {
       usersMap = usersData.reduce((acc, user) => {
-        acc[user.id] = user as UserData;
+        // Add the missing 'poste' property with an empty string default value
+        acc[user.id] = {
+          ...user,
+          poste: ""
+        } as UserData;
         return acc;
       }, {} as Record<string, UserData>);
     }
@@ -148,5 +152,3 @@ async function processRawFeedbacks(rawFeedbacks: any[]): Promise<Feedback[]> {
 
   return processedFeedbacks;
 }
-
-// Remove the duplicate function that was previously here
