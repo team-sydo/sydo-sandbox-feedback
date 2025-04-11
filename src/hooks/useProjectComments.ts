@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { useFeedbacksData } from "./useFeedbacksData";
 import { useAuthors } from "./useAuthors";
 import { useFeedbackActions } from "./useFeedbackActions";

@@ -42,17 +42,8 @@ export function useFeedbacksData(
         query = query.eq("done", false);
       }
 
-      if (selectedAuthorId) {
-        const authors = await fetchAuthorsForFeedbacks(feedbacks);
-        const selectedAuthor = authors.find(author => author.id === selectedAuthorId);
-        if (selectedAuthor) {
-          if (selectedAuthor.type === "user") {
-            query = query.eq("user_id", selectedAuthorId);
-          } else {
-            query = query.eq("guest_id", selectedAuthorId);
-          }
-        }
-      }
+      // For author filtering, we'll apply it after fetching the data
+      // since we need to fetch user/guest data regardless
 
       const { data, error } = await query.order("created_at", {
         ascending: false,
@@ -62,8 +53,18 @@ export function useFeedbacksData(
 
       if (data) {
         const processedFeedbacks = await processRawFeedbacks(data);
-        console.log("Loaded feedbacks:", processedFeedbacks.length);
-        setFeedbacks(processedFeedbacks);
+        
+        // Apply author filter if needed
+        let filteredFeedbacks = processedFeedbacks;
+        if (selectedAuthorId) {
+          filteredFeedbacks = processedFeedbacks.filter(feedback => 
+            (feedback.user_id === selectedAuthorId) || 
+            (feedback.guest_id === selectedAuthorId)
+          );
+        }
+        
+        console.log("Loaded feedbacks:", filteredFeedbacks.length);
+        setFeedbacks(filteredFeedbacks);
       }
     } catch (error: any) {
       console.error("Erreur lors du chargement des feedbacks:", error);
@@ -91,63 +92,61 @@ async function processRawFeedbacks(rawFeedbacks: any[]): Promise<Feedback[]> {
     };
   });
 
+  // Extract all user and guest IDs to fetch in batch
+  const userIds = [...new Set(processedFeedbacks
+    .filter(f => f.user_id)
+    .map(f => f.user_id))];
+  
+  const guestIds = [...new Set(processedFeedbacks
+    .filter(f => f.guest_id)
+    .map(f => f.guest_id))];
+
+  // Fetch all users in a single query
+  let usersMap: Record<string, UserData> = {};
+  if (userIds.length > 0) {
+    const { data: usersData } = await supabase
+      .from("users")
+      .select("id, nom, prenom, device, navigateur")
+      .in("id", userIds);
+      
+    if (usersData) {
+      usersMap = usersData.reduce((acc, user) => {
+        acc[user.id] = user as UserData;
+        return acc;
+      }, {} as Record<string, UserData>);
+    }
+  }
+
+  // Fetch all guests in a single query
+  let guestsMap: Record<string, UserData> = {};
+  if (guestIds.length > 0) {
+    const { data: guestsData } = await supabase
+      .from("guests")
+      .select("id, nom, prenom, device, navigateur, poste")
+      .in("id", guestIds);
+      
+    if (guestsData) {
+      guestsMap = guestsData.reduce((acc, guest) => {
+        acc[guest.id] = guest as UserData;
+        return acc;
+      }, {} as Record<string, UserData>);
+    }
+  }
+
+  // Associate users and guests with their respective feedbacks
   for (let i = 0; i < processedFeedbacks.length; i++) {
     const feedback = processedFeedbacks[i];
-
-    if (feedback.user_id) {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("nom, prenom, device, navigateur")
-        .eq("id", feedback.user_id)
-        .single();
-
-      if (userData) {
-        processedFeedbacks[i].user = userData as UserData;
-      }
+    
+    if (feedback.user_id && usersMap[feedback.user_id]) {
+      processedFeedbacks[i].user = usersMap[feedback.user_id];
     }
-
-    if (feedback.guest_id) {
-      const { data: guestData } = await supabase
-        .from("guests")
-        .select("nom, prenom, device, navigateur, poste")
-        .eq("id", feedback.guest_id)
-        .single();
-
-      if (guestData) {
-        processedFeedbacks[i].guest = guestData as UserData;
-      }
+    
+    if (feedback.guest_id && guestsMap[feedback.guest_id]) {
+      processedFeedbacks[i].guest = guestsMap[feedback.guest_id];
     }
   }
 
   return processedFeedbacks;
 }
 
-async function fetchAuthorsForFeedbacks(feedbacks: Feedback[]): Promise<Author[]> {
-  const authors: Author[] = [];
-  
-  for (const feedback of feedbacks) {
-    if (feedback.user_id && feedback.user && !authors.some(a => a.id === feedback.user_id)) {
-      authors.push({
-        id: feedback.user_id,
-        name: `${feedback.user.prenom} ${feedback.user.nom}`,
-        device: feedback.user.device,
-        navigateur: feedback.user.navigateur,
-        poste: "",
-        type: "user"
-      });
-    }
-    
-    if (feedback.guest_id && feedback.guest && !authors.some(a => a.id === feedback.guest_id)) {
-      authors.push({
-        id: feedback.guest_id,
-        name: `${feedback.guest.prenom} ${feedback.guest.nom}`,
-        device: feedback.guest.device,
-        navigateur: feedback.guest.navigateur,
-        poste: feedback.guest.poste,
-        type: "guest"
-      });
-    }
-  }
-  
-  return authors;
-}
+// Remove the duplicate function that was previously here
