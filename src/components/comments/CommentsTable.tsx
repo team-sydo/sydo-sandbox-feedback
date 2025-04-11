@@ -217,6 +217,7 @@ export function CommentsTable({
 
   // Handle checkbox change
   const handleCheckboxChange = async (feedbackId: string, currentStatus: boolean) => {
+    console.log("Checkbox clicked for", feedbackId, "current status:", currentStatus);
     await toggleFeedbackStatus(feedbackId, currentStatus);
   };
 

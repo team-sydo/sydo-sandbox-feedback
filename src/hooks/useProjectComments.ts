@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -91,10 +91,16 @@ export function useProjectComments(projectId: string | undefined) {
     }
   };
 
-  const fetchFeedbacks = async () => {
+  const fetchFeedbacks = useCallback(async () => {
     if (!projectId) return;
 
     try {
+      console.log("Fetching feedbacks with filters:", {
+        selectedGrainId,
+        statusFilter,
+        selectedAuthorId
+      });
+      
       let query = supabase
         .from("feedbacks")
         .select(
@@ -197,6 +203,7 @@ export function useProjectComments(projectId: string | undefined) {
           }
         }
 
+        console.log("Loaded feedbacks:", processedFeedbacks.length);
         setAuthors(tempAuthors);
         setFeedbacks(processedFeedbacks);
       }
@@ -208,20 +215,30 @@ export function useProjectComments(projectId: string | undefined) {
         variant: "destructive",
       });
     }
-  };
+  }, [projectId, selectedGrainId, statusFilter, selectedAuthorId, authors, toast]);
 
   const toggleFeedbackStatus = async (
     feedbackId: string,
     currentStatus: boolean
   ) => {
     try {
-      const { error } = await supabase
+      console.log(`Toggling feedback status for ID ${feedbackId}: ${currentStatus} -> ${!currentStatus}`);
+      
+      // Update in Supabase
+      const { error, data } = await supabase
         .from("feedbacks")
         .update({ done: !currentStatus })
-        .eq("id", feedbackId);
+        .eq("id", feedbackId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
 
+      console.log("Supabase update result:", data);
+
+      // Update local state
       setFeedbacks(
         feedbacks.map((feedback) =>
           feedback.id === feedbackId
@@ -237,6 +254,7 @@ export function useProjectComments(projectId: string | undefined) {
           : "Le commentaire a été marqué comme traité",
       });
     } catch (error: any) {
+      console.error("Error toggling feedback status:", error);
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour le statut du commentaire",
@@ -308,11 +326,11 @@ export function useProjectComments(projectId: string | undefined) {
 
   useEffect(() => {
     fetchProjectData();
-  }, [projectId, toast]);
+  }, [projectId]);
 
   useEffect(() => {
     fetchFeedbacks();
-  }, [selectedGrainId, statusFilter, selectedAuthorId, projectId]);
+  }, [fetchFeedbacks]);
 
   return {
     loading,
