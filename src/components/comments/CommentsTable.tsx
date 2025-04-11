@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Pen,
@@ -309,12 +310,14 @@ export function CommentsTable({
                   >
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
-                  <Checkbox className="m-2"
-                  checked={feedback.done}
-                  onCheckedChange={() =>
-                    toggleFeedbackStatus(feedback.id, feedback.done)
-                  }
-                />
+                  <Checkbox 
+                    className="m-2"
+                    checked={feedback.done}
+                    onCheckedChange={() =>
+                      toggleFeedbackStatus(feedback.id, feedback.done)
+                    }
+                    aria-label={feedback.done ? "Marquer comme non traité" : "Marquer comme traité"}
+                  />
                 </div>
               </TableCell>}
             </TableRow>
