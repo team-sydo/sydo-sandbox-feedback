@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,19 +11,9 @@ import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
 import { GuestForm } from "@/components/GuestForm";
 import { Grain, Guest } from "@/types";
-
-// Types
-interface Feedback {
-  id: string;
-  grain_id: string;
-  content: string;
-  timecode: number | null;
-  screenshot_url: string | null;
-  done: boolean;
-  user_id: string | null;
-  guest_id: string | null;
-  created_at: string;
-}
+import { EditCommentModal } from "@/components/comments/EditCommentModal";
+import { DeleteFeedbackDialog } from "@/components/comments/DeleteFeedbackDialog";
+import { Feedback } from "@/hooks/useProjectComments";
 
 export default function GrainView() {
   const { grainId } = useParams<{ grainId: string }>();
@@ -38,9 +29,12 @@ export default function GrainView() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [guestCreated, setGuestCreated] = useState(false);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
+  const [feedbackToEdit, setFeedbackToEdit] = useState<Feedback | null>(null);
+  const [feedbackToDelete, setFeedbackToDelete] = useState<string | null>(null);
 
   // Références
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
   useEffect(() => {
     // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
     // et qu'aucun invité n'a été créé pour cette session
@@ -48,6 +42,7 @@ export default function GrainView() {
       setIsGuestFormOpen(true);
     }
   }, [user, guestCreated]);
+
   useEffect(() => {
     const fetchGrainDetails = async () => {
       if (!grainId) return;
@@ -76,10 +71,8 @@ export default function GrainView() {
           project: grainData.project
         });
         
-        // Récupérer les feedbacks du grain pour l'utilisateur actuel
-        if (user) {
-          await fetchFeedbacks();
-        }
+        // Récupérer tous les feedbacks du grain, pas seulement ceux de l'utilisateur courant
+        await fetchFeedbacks();
       } catch (error: any) {
         toast({
           title: "Erreur",
@@ -92,7 +85,7 @@ export default function GrainView() {
     };
 
     fetchGrainDetails();
-  }, [grainId, user, toast]);
+  }, [grainId, toast]);
   
   const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
     setGuestCreated(true);
@@ -103,23 +96,39 @@ export default function GrainView() {
       description: `Merci de votre participation, ${guest.prenom}`,
     });
   };
+
   const fetchFeedbacks = async () => {
-    if (!grainId || !user) return;
+    if (!grainId) return;
 
     try {
+      // Récupérer tous les feedbacks liés au grain
       const { data: feedbacksData, error: feedbacksError } = await supabase
         .from("feedbacks")
-        .select("*")
+        .select(`
+          *,
+          user:user_id(id, nom, prenom, device, navigateur),
+          guest:guest_id(id, nom, prenom, device, navigateur, poste)
+        `)
         .eq("grain_id", grainId)
-        .eq("user_id", user.id)
-        .eq("guest_id", guest?.id)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
 
-      setFeedbacks(feedbacksData || []);
+      // Traiter les données pour s'assurer que les champs user et guest sont correctement formatés
+      const processedFeedbacks = feedbacksData?.map(feedback => ({
+        ...feedback,
+        user: feedback.user || null,
+        guest: feedback.guest || null
+      })) || [];
+
+      setFeedbacks(processedFeedbacks);
     } catch (error: any) {
       console.error("Erreur lors du chargement des feedbacks:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les commentaires",
+        variant: "destructive",
+      });
     }
   };
 
@@ -158,6 +167,74 @@ export default function GrainView() {
       toast({
         title: "Erreur",
         description: error.message || "Impossible de mettre à jour le statut",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditFeedback = (feedback: Feedback) => {
+    setFeedbackToEdit(feedback);
+  };
+
+  const handleUpdateFeedback = async (id: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from("feedbacks")
+        .update({ content })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Mettre à jour l'état local
+      setFeedbacks((prev) =>
+        prev.map((feedback) =>
+          feedback.id === id ? { ...feedback, content } : feedback
+        )
+      );
+
+      setFeedbackToEdit(null);
+
+      toast({
+        title: "Succès",
+        description: "Le commentaire a été mis à jour",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de mettre à jour le commentaire",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteClick = (feedbackId: string) => {
+    setFeedbackToDelete(feedbackId);
+  };
+
+  const handleDeleteFeedback = async () => {
+    if (!feedbackToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("feedbacks")
+        .delete()
+        .eq("id", feedbackToDelete);
+
+      if (error) throw error;
+
+      // Mettre à jour l'état local
+      setFeedbacks((prev) => prev.filter((feedback) => feedback.id !== feedbackToDelete));
+
+      setFeedbackToDelete(null);
+
+      toast({
+        title: "Succès",
+        description: "Le commentaire a été supprimé",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer le commentaire",
         variant: "destructive",
       });
     }
@@ -261,16 +338,36 @@ export default function GrainView() {
           <FeedbacksList
             feedbacks={feedbacks}
             onToggleStatus={toggleFeedbackStatus}
+            onEditFeedback={handleEditFeedback}
+            onDeleteFeedback={handleDeleteClick}
             onClose={() => setSidebarOpen(false)}
           />
         </aside>
       </div>
-      {/* Modal pour l'inscription d'un invité */}
+
+      {/* Modals */}
       {isGuestFormOpen && (
         <GuestForm
           projectId={grain?.project_id || ""}
           onClose={() => setIsGuestFormOpen(false)}
           onSubmit={handleGuestSubmit}
+        />
+      )}
+
+      {feedbackToEdit && (
+        <EditCommentModal
+          isOpen={!!feedbackToEdit}
+          onClose={() => setFeedbackToEdit(null)}
+          feedback={feedbackToEdit}
+          onSave={handleUpdateFeedback}
+        />
+      )}
+
+      {feedbackToDelete && (
+        <DeleteFeedbackDialog
+          isOpen={!!feedbackToDelete}
+          onClose={() => setFeedbackToDelete(null)}
+          onDelete={handleDeleteFeedback}
         />
       )}
     </div>
