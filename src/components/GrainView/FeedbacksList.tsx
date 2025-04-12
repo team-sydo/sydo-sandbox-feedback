@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, Video, X, Pen, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatTimecode } from '@/lib/format-utils';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Feedback } from '@/hooks/useProjectComments';
+import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/hooks/useAuth';
 
 interface FeedbacksListProps {
   feedbacks: Feedback[];
@@ -21,6 +23,9 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
   onEditFeedback,
   onClose
 }) => {
+  const { user } = useAuth();
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  
   // Helper function to get commenter name
   const getCommenterName = (feedback: Feedback) => {
     if (feedback.user && feedback.user.prenom) {
@@ -31,7 +36,14 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
     return "Anonyme";
   };
   
-  if (feedbacks.length === 0) {
+  // Filter feedbacks based on the switch state
+  const filteredFeedbacks = showOnlyMine 
+    ? feedbacks.filter(feedback => 
+        (user && feedback.user_id === user.id)
+      )
+    : feedbacks;
+  
+  if (filteredFeedbacks.length === 0) {
     return (
       <div className="h-full flex flex-col">
         <div className="flex justify-between items-center p-4 border-b">
@@ -40,8 +52,21 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
             <X className="h-4 w-4" />
           </Button>
         </div>
+        
+        <div className="px-4 py-3 border-b">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Afficher uniquement mes commentaires</span>
+            <Switch 
+              checked={showOnlyMine} 
+              onCheckedChange={setShowOnlyMine} 
+            />
+          </div>
+        </div>
+        
         <div className="flex-1 flex items-center justify-center text-gray-500">
-          Aucun commentaire pour le moment
+          {showOnlyMine 
+            ? "Vous n'avez pas encore ajouté de commentaires" 
+            : "Aucun commentaire pour le moment"}
         </div>
       </div>
     );
@@ -55,8 +80,19 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
           <X className="h-4 w-4" />
         </Button>
       </div>
+      
+      <div className="px-4 py-3 border-b">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Afficher uniquement mes commentaires</span>
+          <Switch 
+            checked={showOnlyMine} 
+            onCheckedChange={setShowOnlyMine} 
+          />
+        </div>
+      </div>
+      
       <div className="flex-1 overflow-y-auto p-4">
-        {feedbacks.map((feedback) => (
+        {filteredFeedbacks.map((feedback) => (
           <Card 
             key={feedback.id} 
             className={`mb-4 ${feedback.done ? "bg-green-50" : ""}`}
