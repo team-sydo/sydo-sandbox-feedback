@@ -71,7 +71,7 @@ export default function GrainView() {
           project: grainData.project
         });
         
-        // Récupérer tous les feedbacks du grain, pas seulement ceux de l'utilisateur courant
+        // Récupérer tous les feedbacks du grain
         await fetchFeedbacks();
       } catch (error: any) {
         toast({
@@ -101,25 +101,68 @@ export default function GrainView() {
     if (!grainId) return;
 
     try {
-      // Récupérer tous les feedbacks liés au grain
+      // Récupérer tous les feedbacks liés au grain sans essayer de joindre directement
       const { data: feedbacksData, error: feedbacksError } = await supabase
         .from("feedbacks")
-        .select(`
-          *,
-          user:user_id(id, nom, prenom, device, navigateur),
-          guest:guest_id(id, nom, prenom, device, navigateur, poste)
-        `)
+        .select("*")
         .eq("grain_id", grainId)
         .order("created_at", { ascending: false });
 
       if (feedbacksError) throw feedbacksError;
 
-      // Traiter les données pour s'assurer que les champs user et guest sont correctement formatés
-      const processedFeedbacks = feedbacksData?.map(feedback => ({
+      // Initialiser la liste des feedbacks
+      const processedFeedbacks: Feedback[] = feedbacksData.map(feedback => ({
         ...feedback,
-        user: feedback.user || null,
-        guest: feedback.guest || null
-      })) || [];
+        user: null,
+        guest: null
+      }));
+
+      // Récupérer tous les utilisateurs et invités nécessaires
+      const userIds = [...new Set(processedFeedbacks.filter(f => f.user_id).map(f => f.user_id))];
+      const guestIds = [...new Set(processedFeedbacks.filter(f => f.guest_id).map(f => f.guest_id))];
+
+      // Récupérer les données des utilisateurs
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from("users")
+          .select("id, nom, prenom, device, navigateur")
+          .in("id", userIds as string[]);
+
+        if (usersData) {
+          // Associer les utilisateurs aux feedbacks
+          processedFeedbacks.forEach(feedback => {
+            if (feedback.user_id) {
+              const userData = usersData.find(u => u.id === feedback.user_id);
+              if (userData) {
+                feedback.user = {
+                  ...userData,
+                  poste: "" // Ajout de la propriété poste manquante
+                };
+              }
+            }
+          });
+        }
+      }
+
+      // Récupérer les données des invités
+      if (guestIds.length > 0) {
+        const { data: guestsData } = await supabase
+          .from("guests")
+          .select("id, nom, prenom, device, navigateur, poste")
+          .in("id", guestIds as string[]);
+
+        if (guestsData) {
+          // Associer les invités aux feedbacks
+          processedFeedbacks.forEach(feedback => {
+            if (feedback.guest_id) {
+              const guestData = guestsData.find(g => g.id === feedback.guest_id);
+              if (guestData) {
+                feedback.guest = guestData;
+              }
+            }
+          });
+        }
+      }
 
       setFeedbacks(processedFeedbacks);
     } catch (error: any) {
@@ -338,8 +381,8 @@ export default function GrainView() {
           <FeedbacksList
             feedbacks={feedbacks}
             onToggleStatus={toggleFeedbackStatus}
-            onEditFeedback={handleEditFeedback}
             onDeleteFeedback={handleDeleteClick}
+            onEditFeedback={handleEditFeedback}
             onClose={() => setSidebarOpen(false)}
           />
         </aside>

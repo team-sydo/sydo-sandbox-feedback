@@ -9,7 +9,7 @@ import { Feedback } from '@/hooks/useProjectComments';
 interface FeedbacksListProps {
   feedbacks: Feedback[];
   onToggleStatus: (feedbackId: string, currentStatus: boolean) => Promise<void>;
-  onDeleteFeedback: (feedbackId: string) => Promise<void>;
+  onDeleteFeedback: (feedbackId: string) => void;
   onEditFeedback: (feedback: Feedback) => void;
   onClose: () => void;
 }
