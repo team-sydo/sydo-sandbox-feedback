@@ -98,7 +98,7 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
                   className="h-8 px-2"
                 >
                   <Pen className="h-4 w-4 mr-1" />
-                  <span>Modifier</span>
+                  <span></span>
                 </Button>
                 <Button 
                   size="sm" 
@@ -107,7 +107,7 @@ const FeedbacksList: React.FC<FeedbacksListProps> = ({
                   className="h-8 px-2 text-red-500 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  <span>Supprimer</span>
+                  <span></span>
                 </Button>
               </div>
               <Button
