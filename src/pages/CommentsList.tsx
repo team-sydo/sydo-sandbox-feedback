@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,9 +48,8 @@ export default function CommentsList() {
   const userName = user
   ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
   : "";
+
   useEffect(() => {
-    // Afficher le formulaire d'invité uniquement si l'utilisateur n'est pas connecté
-    // et qu'aucun invité n'a été créé pour cette session
     if (!user && !guestCreated) {
       setIsGuestFormOpen(true);
       setDisplayActions(false);
@@ -121,8 +119,9 @@ export default function CommentsList() {
           )}
         </div>
       </main>
-        {/* Modal pour l'inscription d'un invité */}
-        {isGuestFormOpen && (
+
+      {/* Modal pour l'inscription d'un invité */}
+      {isGuestFormOpen && (
         <GuestForm
           projectId={projectId || ""}
           onClose={() => setIsGuestFormOpen(false)}

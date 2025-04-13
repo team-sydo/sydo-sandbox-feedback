@@ -8,7 +8,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { UserPlus } from "lucide-react";
+import { UserPlus, User } from "lucide-react";
+import { LoginModal } from "@/components/LoginModal";
 
 interface GuestFormProps {
   projectId: string;
@@ -33,6 +34,8 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
   const [existingGuests, setExistingGuests] = useState<Guest[]>([]);
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<'new' | 'existing'>('new');
+  const [accessMode, setAccessMode] = useState<'guest' | 'user'>('guest');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch existing guests for this project
@@ -156,156 +159,198 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
     }
   };
 
+  const handleLoginModalClose = () => {
+    setIsLoginModalOpen(false);
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Bienvenue sur Sydo Reviews</DialogTitle>
           <DialogDescription>
-            Merci de choisir un profil existant ou remplir ce formulaire pour consulter les éléments à tester.
+            Choisissez un mode d'accès pour consulter les éléments à tester.
           </DialogDescription>
         </DialogHeader>
         
-        {existingGuests.length > 0 && (
-          <div className="mb-4 flex items-center gap-4">
-            <Button 
-              variant={formMode === 'existing' ? "default" : "outline"} 
-              size="sm"
-              onClick={() => setFormMode('existing')}
-              className="flex-1"
-            >
-              Profil existant
-            </Button>
-            <Button 
-              variant={formMode === 'new' ? "default" : "outline"} 
-              size="sm"
-              onClick={() => {
-                setFormMode('new');
-                setFirstName("");
-                setLastName("");
-                setPosition("");
-                setSelectedGuestId(null);
-              }}
-              className="flex-1"
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Nouveau profil
-            </Button>
-          </div>
-        )}
+        <div className="mb-4 flex items-center gap-4">
+          <Button 
+            variant={accessMode === 'guest' ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setAccessMode('guest')}
+            className="flex-1"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Accès invité
+          </Button>
+          <Button 
+            variant={accessMode === 'user' ? "default" : "outline"} 
+            size="sm"
+            onClick={() => {
+              setAccessMode('user');
+              setIsLoginModalOpen(true);
+            }}
+            className="flex-1"
+          >
+            <User className="mr-2 h-4 w-4" />
+            Connexion utilisateur
+          </Button>
+        </div>
 
-        {formMode === 'existing' && existingGuests.length > 0 && (
-          <div className="space-y-2 mb-4">
-            <Label htmlFor="existingGuest">Sélectionner un profil</Label>
-            <Select
-              value={selectedGuestId || ""}
-              onValueChange={handleGuestSelect}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choisir un profil" />
-              </SelectTrigger>
-              <SelectContent>
-                {existingGuests.map((guest) => (
-                  <SelectItem key={guest.id} value={guest.id}>
-                    {guest.prenom} {guest.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {(formMode === 'new' || existingGuests.length === 0) && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">Prénom</Label>
-                  <Input
-                    id="firstName"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Jean"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Nom</Label>
-                  <Input
-                    id="lastName"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Dupont"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="position">Poste (optionnel)</Label>
-                <Input
-                  id="position"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  placeholder="Directeur marketing"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="device">Sur quel appareil êtes-vous ?</Label>
-                <RadioGroup
-                  value={device}
-                  onValueChange={(value) => setDevice(value as 'mobile' | 'ordinateur' | 'tablette')}
-                  className="flex flex-wrap gap-4"
+        {accessMode === 'guest' && (
+          <>
+            {existingGuests.length > 0 && (
+              <div className="mb-4 flex items-center gap-4">
+                <Button 
+                  variant={formMode === 'existing' ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setFormMode('existing')}
+                  className="flex-1"
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="mobile" id="mobile" />
-                    <Label htmlFor="mobile">Mobile</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="ordinateur" id="ordinateur" />
-                    <Label htmlFor="ordinateur">Ordinateur</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="tablette" id="tablette" />
-                    <Label htmlFor="tablette">Tablette</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="browser">Quel navigateur utilisez-vous ?</Label>
-                <Select 
-                  value={browser} 
-                  onValueChange={(value) => setBrowser(value as any)}
+                  Profil existant
+                </Button>
+                <Button 
+                  variant={formMode === 'new' ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => {
+                    setFormMode('new');
+                    setFirstName("");
+                    setLastName("");
+                    setPosition("");
+                    setSelectedGuestId(null);
+                  }}
+                  className="flex-1"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un navigateur" />
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Nouveau profil
+                </Button>
+              </div>
+            )}
+
+            {formMode === 'existing' && existingGuests.length > 0 && (
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="existingGuest">Sélectionner un profil</Label>
+                <Select
+                  value={selectedGuestId || ""}
+                  onValueChange={handleGuestSelect}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choisir un profil" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="chrome">Chrome</SelectItem>
-                    <SelectItem value="edge">Edge</SelectItem>
-                    <SelectItem value="firefox">Firefox</SelectItem>
-                    <SelectItem value="safari">Safari</SelectItem>
-                    <SelectItem value="autre">Autre</SelectItem>
+                    {existingGuests.map((guest) => (
+                      <SelectItem key={guest.id} value={guest.id}>
+                        {guest.prenom} {guest.nom}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-            </>
-          )}
+            )}
           
-          <DialogFooter className="pt-4">
-            <Button 
-              type="submit"
-              disabled={loading || (formMode === 'existing' && !selectedGuestId)}
-              className="w-full"
-            >
-              {loading ? "Traitement..." : "Commencer le test"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              {(formMode === 'new' || existingGuests.length === 0) && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Prénom</Label>
+                      <Input
+                        id="firstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="Jean"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Nom</Label>
+                      <Input
+                        id="lastName"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Dupont"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Poste (optionnel)</Label>
+                    <Input
+                      id="position"
+                      value={position}
+                      onChange={(e) => setPosition(e.target.value)}
+                      placeholder="Directeur marketing"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="device">Sur quel appareil êtes-vous ?</Label>
+                    <RadioGroup
+                      value={device}
+                      onValueChange={(value) => setDevice(value as 'mobile' | 'ordinateur' | 'tablette')}
+                      className="flex flex-wrap gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="mobile" id="mobile" />
+                        <Label htmlFor="mobile">Mobile</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="ordinateur" id="ordinateur" />
+                        <Label htmlFor="ordinateur">Ordinateur</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="tablette" id="tablette" />
+                        <Label htmlFor="tablette">Tablette</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="browser">Quel navigateur utilisez-vous ?</Label>
+                    <Select 
+                      value={browser} 
+                      onValueChange={(value) => setBrowser(value as any)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un navigateur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="chrome">Chrome</SelectItem>
+                        <SelectItem value="edge">Edge</SelectItem>
+                        <SelectItem value="firefox">Firefox</SelectItem>
+                        <SelectItem value="safari">Safari</SelectItem>
+                        <SelectItem value="autre">Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+              
+              <DialogFooter className="pt-4">
+                <Button 
+                  type="submit"
+                  disabled={loading || (formMode === 'existing' && !selectedGuestId)}
+                  className="w-full"
+                >
+                  {loading ? "Traitement..." : "Commencer le test"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
+        )}
       </DialogContent>
+
+      {isLoginModalOpen && (
+        <LoginModal 
+          isOpen={isLoginModalOpen} 
+          onClose={() => {
+            handleLoginModalClose();
+            onClose(); // Fermer également la boîte de dialogue principale
+          }}
+        />
+      )}
     </Dialog>
   );
 }
