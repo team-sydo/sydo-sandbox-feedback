@@ -56,6 +56,10 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Fetched guests:", data);
         if (data && data.length > 0) {
           setExistingGuests(data);
+          // Set form mode to 'existing' if there are guests already
+          if (formMode === 'new' && data.length > 0) {
+            setFormMode('existing');
+          }
         }
       } catch (error) {
         console.error("Error in fetchGuests:", error);
