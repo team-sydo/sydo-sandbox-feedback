@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageAnnotationModal from './ImageAnnotationModal';
+import { Input } from '@/components/ui/input';
 
 interface FeedbackFormProps {
   grainId: string;
@@ -30,8 +31,9 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
@@ -40,44 +42,53 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Format invalide",
-          description: "Veuillez sélectionner un fichier image",
-          variant: "destructive"
-        });
-        return;
-      }
-      setScreenshotFile(file);
-      setIsAnnotationModalOpen(true);
+      processImageFile(file);
     }
+  };
+
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Format invalide",
+        description: "Veuillez sélectionner un fichier image",
+        variant: "destructive"
+      });
+      return;
+    }
+    setScreenshotFile(file);
+    setIsAnnotationModalOpen(true);
   };
 
   const handleCaptureClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Format invalide",
-          description: "Veuillez sélectionner un fichier image",
-          variant: "destructive"
-        });
-        return;
-      }
-      setScreenshotFile(file);
-      setIsAnnotationModalOpen(true);
-    }
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      processImageFile(file);
+    }
   };
 
   const handleTogglePlayPause = () => {
@@ -232,12 +243,33 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
     }
   };
 
-  return <div ref={dropZoneRef} onDrop={handleDrop} onDragOver={handleDragOver} className="flex items-center px-4 py-3 gap-2 border-t bg-white">
+  return (
+    <div className="flex items-center px-4 py-3 gap-2 border-t bg-white">
       {isVideoType && <Button size="sm" onClick={handleTogglePlayPause} className="w-16 bg-blue-500 hover:bg-blue-900">
           {isVideoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>}
 
-      <input type="text" placeholder="Ajouter un commentaire..." value={content} onChange={handleContentChange} className="flex-1 py-2 px-3 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary" />
+      <div 
+        ref={inputContainerRef}
+        className={`flex-1 relative ${isDraggingOver ? 'bg-blue-50 border border-blue-300' : ''}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <Input 
+          type="text" 
+          placeholder="Ajouter un commentaire..." 
+          value={content} 
+          onChange={handleContentChange} 
+          className="flex-1 py-2 px-3 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary w-full"
+        />
+        {isDraggingOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-50 bg-opacity-80 pointer-events-none">
+            <p className="text-sm text-blue-600 font-medium">Déposer l'image ici</p>
+          </div>
+        )}
+      </div>
       
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       
@@ -251,7 +283,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       </Button>
       
       <ImageAnnotationModal isOpen={isAnnotationModalOpen} onClose={() => setIsAnnotationModalOpen(false)} imageFile={screenshotFile} onSubmit={handleAnnotationSubmit} timecode={currentTime} />
-    </div>;
+    </div>
+  );
 };
 
 export default FeedbackForm;
