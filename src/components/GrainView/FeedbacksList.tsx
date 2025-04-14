@@ -1,166 +1,142 @@
 
-import React, { useState } from 'react';
-import { Check, Video, X, Pen, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { formatDate, formatTimecode } from '@/lib/format-utils';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Feedback } from '@/hooks/useProjectComments';
-import { Switch } from '@/components/ui/switch';
-import { useAuth } from '@/hooks/useAuth';
+import React from "react";
+import { Check, X, Pen, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import { type Feedback } from "@/hooks/useProjectComments";
 
 interface FeedbacksListProps {
   feedbacks: Feedback[];
-  onToggleStatus: (feedbackId: string, currentStatus: boolean) => Promise<void>;
-  onDeleteFeedback: (feedbackId: string) => void;
+  onToggleStatus: (id: string, currentStatus: boolean) => void;
+  onDeleteFeedback: (id: string, guestId: string | null) => void;
   onEditFeedback: (feedback: Feedback) => void;
   onClose: () => void;
+  isAuthenticated?: boolean;
+  currentGuestId?: string | null;
 }
 
-const FeedbacksList: React.FC<FeedbacksListProps> = ({ 
-  feedbacks, 
+export default function FeedbacksList({
+  feedbacks,
   onToggleStatus,
   onDeleteFeedback,
   onEditFeedback,
-  onClose
-}) => {
-  const { user } = useAuth();
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
-  
-  // Helper function to get commenter name
-  const getCommenterName = (feedback: Feedback) => {
-    if (feedback.user && feedback.user.prenom) {
-      return `${feedback.user.prenom} ${feedback.user.nom || ''}`;
-    } else if (feedback.guest && feedback.guest.prenom) {
-      return `${feedback.guest.prenom} ${feedback.guest.nom || ''}`;
-    }
-    return "Anonyme";
+  onClose,
+  isAuthenticated = false,
+  currentGuestId = null,
+}: FeedbacksListProps) {
+  const sortedFeedbacks = [...feedbacks].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  // Check if the current guest can edit/delete a feedback
+  const canGuestModifyFeedback = (feedback: Feedback) => {
+    if (isAuthenticated) return true;
+    return currentGuestId && feedback.guest_id === currentGuestId;
   };
-  
-  // Filter feedbacks based on the switch state
-  const filteredFeedbacks = showOnlyMine 
-    ? feedbacks.filter(feedback => 
-        (user && feedback.user_id === user.id)
-      )
-    : feedbacks;
-  
-  if (filteredFeedbacks.length === 0) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="font-semibold">Feedbacks</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="p-1 h-auto">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Afficher uniquement mes commentaires</span>
-            <Switch 
-              checked={showOnlyMine} 
-              onCheckedChange={setShowOnlyMine} 
-            />
-          </div>
-        </div>
-        
-        <div className="flex-1 flex items-center justify-center text-gray-500">
-          {showOnlyMine 
-            ? "Vous n'avez pas encore ajouté de commentaires" 
-            : "Aucun commentaire pour le moment"}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center p-4 border-b">
-        <h2 className="font-semibold">Feedbacks</h2>
-        <Button variant="ghost" size="sm" onClick={onClose} className="p-1 h-auto">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h3 className="font-semibold">Commentaires ({feedbacks.length})</h3>
+        <button
+          className="p-1 rounded-md hover:bg-gray-100"
+          onClick={onClose}
+        >
           <X className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
-      
-      <div className="px-4 py-3 border-b">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Afficher uniquement mes commentaires</span>
-          <Switch 
-            checked={showOnlyMine} 
-            onCheckedChange={setShowOnlyMine} 
-          />
+
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-6">
+          {sortedFeedbacks.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-8">
+              Aucun commentaire pour le moment
+            </p>
+          ) : (
+            sortedFeedbacks.map((feedback) => {
+              const author = feedback.user
+                ? feedback.user.prenom
+                : feedback.guest
+                ? feedback.guest.prenom
+                : "Anonyme";
+
+              return (
+                <div
+                  key={feedback.id}
+                  className={`p-4 rounded-lg border ${
+                    feedback.done ? "bg-green-50" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-sm font-medium">{author}</p>
+                      <p className="text-xs text-gray-500">
+                        {formatDistanceToNow(
+                          new Date(feedback.created_at),
+                          { addSuffix: true, locale: fr }
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex space-x-1">
+                      {canGuestModifyFeedback(feedback) && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onEditFeedback(feedback)}
+                            className="h-6 w-6"
+                            title="Modifier"
+                          >
+                            <Pen className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDeleteFeedback(feedback.id, feedback.guest_id)}
+                            className="h-6 w-6 text-red-500"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onToggleStatus(feedback.id, feedback.done)}
+                        className={`h-6 w-6 ${
+                          feedback.done
+                            ? "text-green-500"
+                            : "text-gray-500"
+                        }`}
+                        title={
+                          feedback.done ? "Marquer comme non résolu" : "Marquer comme résolu"
+                        }
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <p className="text-sm mt-2">{feedback.content}</p>
+
+                  {feedback.screenshot_url && (
+                    <div className="mt-2">
+                      <img
+                        src={feedback.screenshot_url}
+                        alt="Capture d'écran"
+                        className="max-h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4">
-        {filteredFeedbacks.map((feedback) => (
-          <Card 
-            key={feedback.id} 
-            className={`mb-4 ${feedback.done ? "bg-green-50" : ""}`}
-          >
-            <CardHeader className="p-4 pb-2">
-              <div className="flex justify-between items-center">
-                <p className="text-sm font-medium">{getCommenterName(feedback)}</p>
-                <p className="text-xs text-gray-500">{formatDate(feedback.created_at)}</p>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="p-4 pt-0 pb-2">
-              {feedback.timecode !== null && (
-                <div className="flex items-center text-xs text-gray-500 mb-2">
-                  <Video className="h-3 w-3 mr-1" />
-                  <span>Timecode: {formatTimecode(feedback.timecode)}</span>
-                </div>
-              )}
-              
-              <p className="mb-2">{feedback.content}</p>
-              
-              {feedback.screenshot_url && (
-                <div className="mt-2 mb-2">
-                  <img 
-                    src={feedback.screenshot_url} 
-                    alt="Capture d'écran" 
-                    className="max-h-32 rounded border"
-                  />
-                </div>
-              )}
-            </CardContent>
-            
-            <CardFooter className="p-4 pt-2 flex justify-between">
-              <div className="flex space-x-2">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={() => onEditFeedback(feedback)}
-                  className="h-8 px-2"
-                >
-                  <Pen className="h-4 w-4 mr-1" />
-                  <span></span>
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={() => onDeleteFeedback(feedback.id)}
-                  className="h-8 px-2 text-red-500 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  <span></span>
-                </Button>
-              </div>
-              <Button
-                size="sm"
-                variant={feedback.done ? "outline" : "default"}
-                onClick={() => onToggleStatus(feedback.id, feedback.done)}
-                className={`h-8 ${feedback.done ? "text-gray-600" : ""}`}
-              >
-                {feedback.done ? "Rouvrir" : <Check className="h-4 w-4 mr-1" />}
-                {!feedback.done && <span>Résolu</span>}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+      </ScrollArea>
     </div>
   );
-};
-
-export default FeedbacksList;
+}

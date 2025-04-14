@@ -8,7 +8,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { type Feedback } from "@/hooks/useProjectComments";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { EditCommentModal } from "./EditCommentModal";

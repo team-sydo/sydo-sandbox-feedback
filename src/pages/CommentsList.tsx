@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
@@ -26,6 +27,7 @@ export default function CommentsList() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [guestCreated, setGuestCreated] = useState(false);
+  const [guest, setGuest] = useState<Guest | null>(null);
   const [displayActions, setDisplayActions] = useState(true);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const {
@@ -54,18 +56,69 @@ export default function CommentsList() {
       setIsGuestFormOpen(true);
       setDisplayActions(false);
     } else {
-      setDisplayActions(true);
+      // If user is logged in, always show actions
+      // If guest, check if they are on their comments list
+      setDisplayActions(!!user);
     }
-  }, [user, guestCreated, displayActions]);
+  }, [user, guestCreated]);
 
-  const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+  const handleGuestSubmit = (guestData: Guest) => {
+    setGuest(guestData);
     setGuestCreated(true);
     setIsGuestFormOpen(false);
 
     toast({
       title: "Bienvenue !",
-      description: `Merci de votre participation, ${guest.prenom}`,
+      description: `Merci de votre participation, ${guestData.prenom}`,
     });
+    
+    // Set the author filter to the guest ID to show only their comments
+    setSelectedAuthorId(guestData.id);
+    
+    // Now we know which guest it is, we can show actions for their own comments
+    setDisplayActions(true);
+  };
+
+  const handleDeleteFeedback = async (feedbackId: string) => {
+    try {
+      // For guests, we add extra check before attempting to delete
+      if (!user && guest) {
+        const feedbackToDelete = feedbacks.find(f => f.id === feedbackId);
+        if (feedbackToDelete && feedbackToDelete.guest_id !== guest.id) {
+          toast({
+            title: "Action non autorisée",
+            description: "Vous ne pouvez supprimer que vos propres commentaires",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      await deleteFeedback(feedbackId);
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+    }
+  };
+
+  const handleUpdateFeedback = async (feedbackId: string, content: string) => {
+    try {
+      // For guests, we add extra check before attempting to update
+      if (!user && guest) {
+        const feedbackToUpdate = feedbacks.find(f => f.id === feedbackId);
+        if (feedbackToUpdate && feedbackToUpdate.guest_id !== guest.id) {
+          toast({
+            title: "Action non autorisée",
+            description: "Vous ne pouvez modifier que vos propres commentaires",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      await updateFeedback(feedbackId, content);
+    } catch (error) {
+      console.error("Error updating feedback:", error);
+    }
   };
 
   return (
@@ -112,9 +165,9 @@ export default function CommentsList() {
               feedbacks={feedbacks}
               toggleFeedbackStatus={toggleFeedbackStatus}
               formatTimecode={formatTimecode}
-              updateFeedback={updateFeedback}
-              deleteFeedback={deleteFeedback}
-              displayActions={displayActions}
+              updateFeedback={handleUpdateFeedback}
+              deleteFeedback={handleDeleteFeedback}
+              displayActions={displayActions || !!user || (!!guest && selectedAuthorId === guest.id)}
             />
           )}
         </div>

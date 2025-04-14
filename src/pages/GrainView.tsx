@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -87,6 +88,7 @@ export default function GrainView() {
   }, [grainId, toast]);
   
   const handleGuestSubmit = (guest: Omit<Guest, "id">) => {
+    setGuest(guest as Guest);
     setGuestCreated(true);
     setIsGuestFormOpen(false);
 
@@ -215,6 +217,16 @@ export default function GrainView() {
   };
 
   const handleEditFeedback = (feedback: Feedback) => {
+    // Check if current user is the guest who created the feedback
+    if (!user && guest && feedback.guest_id !== guest.id) {
+      toast({
+        title: "Action non autorisée",
+        description: "Vous ne pouvez modifier que vos propres commentaires",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setFeedbackToEdit(feedback);
   };
 
@@ -249,7 +261,17 @@ export default function GrainView() {
     }
   };
 
-  const handleDeleteClick = (feedbackId: string) => {
+  const handleDeleteClick = (feedbackId: string, guestId: string | null) => {
+    // Check if current user is the guest who created the feedback
+    if (!user && guest && guestId !== guest.id) {
+      toast({
+        title: "Action non autorisée",
+        description: "Vous ne pouvez supprimer que vos propres commentaires",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setFeedbackToDelete(feedbackId);
   };
 
@@ -358,11 +380,12 @@ export default function GrainView() {
 
           {/* Formulaire de feedback */}
           <div>
-            {user && grain && (
+            {(user || guest) && grain && (
               <FeedbackForm
                 grainId={grain.id}
                 projectId={grain.project_id}
-                userId={user.id}
+                userId={user?.id}
+                guestId={guest?.id}
                 currentTime={grain.type === "video" ? currentTime : null}
                 isVideoType={grain.type === "video"}
                 onFeedbackSubmitted={fetchFeedbacks}
@@ -380,9 +403,11 @@ export default function GrainView() {
           <FeedbacksList
             feedbacks={feedbacks}
             onToggleStatus={toggleFeedbackStatus}
-            onDeleteFeedback={handleDeleteClick}
+            onDeleteFeedback={(id, guestId) => handleDeleteClick(id, guestId)}
             onEditFeedback={handleEditFeedback}
             onClose={() => setSidebarOpen(false)}
+            isAuthenticated={!!user}
+            currentGuestId={guest?.id || null}
           />
         </aside>
       </div>
@@ -405,13 +430,11 @@ export default function GrainView() {
         />
       )}
 
-      {feedbackToDelete && (
-        <DeleteFeedbackDialog
-          isOpen={!!feedbackToDelete}
-          onClose={() => setFeedbackToDelete(null)}
-          onDelete={handleDeleteFeedback}
-        />
-      )}
+      <DeleteFeedbackDialog
+        isOpen={!!feedbackToDelete}
+        onClose={() => setFeedbackToDelete(null)}
+        onDelete={handleDeleteFeedback}
+      />
     </div>
   );
 }

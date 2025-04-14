@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { type Feedback } from "@/hooks/useProjectComments";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +33,16 @@ export function FeedbackRow({
   onImageClick,
   displayActions,
 }: FeedbackRowProps) {
+  const { user } = useAuth();
+  
+  // Check if the current user can edit this feedback
+  const canEdit = () => {
+    // Authenticated users can edit any feedback
+    if (user) return true;
+    // Guest users can only edit their own feedback
+    return displayActions;
+  };
+
   // Fonction pour obtenir le nom du commentateur
   const getCommenterName = () => {
     if (feedback.user && feedback.user.prenom && feedback.user.nom) {
