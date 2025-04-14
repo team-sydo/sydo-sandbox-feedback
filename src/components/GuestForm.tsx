@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -75,9 +76,10 @@ export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps)
         console.log("Fetched guests:", data);
         if (data && data.length > 0) {
           setExistingGuests(data);
-          if (formMode === 'new' && data.length > 0) {
-            setFormMode('existing');
-          }
+          // Ne changeons plus automatiquement le mode pour éviter le bug
+          // if (formMode === 'new' && data.length > 0) {
+          //   setFormMode('existing');
+          // }
         }
       } catch (error) {
         console.error("Error in fetchGuests:", error);
@@ -87,7 +89,7 @@ export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps)
     if (currentProjectId) {
       fetchGuests();
     }
-  }, [currentProjectId, formMode]);
+  }, [currentProjectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +126,7 @@ export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps)
           poste: position || null,
           device,
           navigateur: browser,
-          project_id: projectId
+          project_id: currentProjectId
         };
 
         console.log("Creating new guest with data:", guestData);
@@ -180,6 +182,19 @@ export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps)
     setIsLoginModalOpen(false);
   };
 
+  const handleModeChange = (mode: 'new' | 'existing') => {
+    console.log("Changing form mode to:", mode);
+    setFormMode(mode);
+    
+    // Réinitialiser les champs si on change pour le mode 'new'
+    if (mode === 'new') {
+      setFirstName("");
+      setLastName("");
+      setPosition("");
+      setSelectedGuestId(null);
+    }
+  };
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -221,7 +236,7 @@ export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps)
                 <Button 
                   variant={formMode === 'existing' ? "default" : "outline"} 
                   size="sm"
-                  onClick={() => setFormMode('existing')}
+                  onClick={() => handleModeChange('existing')}
                   className="flex-1"
                 >
                   Profil existant
@@ -229,13 +244,7 @@ export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps)
                 <Button 
                   variant={formMode === 'new' ? "default" : "outline"} 
                   size="sm"
-                  onClick={() => {
-                    setFormMode('new');
-                    setFirstName("");
-                    setLastName("");
-                    setPosition("");
-                    setSelectedGuestId(null);
-                  }}
+                  onClick={() => handleModeChange('new')}
                   className="flex-1"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
