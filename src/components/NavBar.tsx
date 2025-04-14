@@ -4,7 +4,7 @@ import { SydoLogo } from "./SydoLogo";
 import { Button } from "@/components/ui/button";
 import { LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { LoginModal } from "./LoginModal";
+import { GuestForm } from "./GuestForm";
 
 interface NavBarProps {
   userName: string;
@@ -12,7 +12,7 @@ interface NavBarProps {
 
 export function NavBar({ userName }: NavBarProps) {
   const { signOut, user } = useAuth();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleAuthAction = async () => {
@@ -26,8 +26,14 @@ export function NavBar({ userName }: NavBarProps) {
         setIsLoggingOut(false);
       }
     } else {
-      setIsLoginModalOpen(true);
+      setIsGuestFormOpen(true);
     }
+  };
+
+  // Fonction pour gérer la soumission d'un invité
+  const handleGuestSubmit = (guest: any) => {
+    setIsGuestFormOpen(false);
+    // Vous pourriez ajouter ici une logique supplémentaire si nécessaire
   };
 
   return (
@@ -61,10 +67,13 @@ export function NavBar({ userName }: NavBarProps) {
         </Button>
       </div>
       
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
-      />
+      {isGuestFormOpen && (
+        <GuestForm 
+          projectId="" // Nous devons passer un projectId, même vide pour le moment
+          onClose={() => setIsGuestFormOpen(false)} 
+          onSubmit={handleGuestSubmit} 
+        />
+      )}
     </nav>
   );
 }

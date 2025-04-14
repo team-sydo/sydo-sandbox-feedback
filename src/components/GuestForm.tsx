@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus, User } from "lucide-react";
 import { LoginModal } from "@/components/LoginModal";
+import { useLocation } from "react-router-dom";
 
 interface GuestFormProps {
-  projectId: string;
+  projectId?: string;
   onClose: () => void;
   onSubmit: (guest: any) => void;
 }
@@ -24,7 +24,9 @@ interface Guest {
   poste?: string | null;
 }
 
-export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
+export function GuestForm({ projectId = '', onClose, onSubmit }: GuestFormProps) {
+  const location = useLocation();
+  const [currentProjectId, setCurrentProjectId] = useState(projectId);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [position, setPosition] = useState("");
@@ -38,15 +40,32 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { toast } = useToast();
 
-  // Fetch existing guests for this project
+  useEffect(() => {
+    if (!currentProjectId) {
+      const pathSegments = location.pathname.split('/');
+      const potentialProjectId = pathSegments.find((segment, index) => 
+        pathSegments[index - 1] === 'project' && segment
+      );
+      
+      if (potentialProjectId) {
+        setCurrentProjectId(potentialProjectId);
+      }
+    }
+  }, [location, currentProjectId]);
+
   useEffect(() => {
     const fetchGuests = async () => {
       try {
-        console.log("Fetching guests for project:", projectId);
+        if (!currentProjectId) {
+          console.log("No valid projectId available, skipping guest fetch");
+          return;
+        }
+        
+        console.log("Fetching guests for project:", currentProjectId);
         const { data, error } = await supabase
           .from('guests')
           .select('id, prenom, nom, poste')
-          .eq('project_id', projectId);
+          .eq('project_id', currentProjectId);
 
         if (error) {
           console.error("Error fetching guests:", error);
@@ -56,7 +75,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
         console.log("Fetched guests:", data);
         if (data && data.length > 0) {
           setExistingGuests(data);
-          // Set form mode to 'existing' if there are guests already
           if (formMode === 'new' && data.length > 0) {
             setFormMode('existing');
           }
@@ -66,10 +84,10 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
       }
     };
 
-    if (projectId) {
+    if (currentProjectId) {
       fetchGuests();
     }
-  }, [projectId]);
+  }, [currentProjectId, formMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,20 +97,17 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
       console.log("Form mode:", formMode);
       console.log("Selected guest ID:", selectedGuestId);
 
-      // If using existing guest
       if (formMode === 'existing' && selectedGuestId) {
         const selectedGuest = existingGuests.find(guest => guest.id === selectedGuestId);
         console.log("Selected existing guest:", selectedGuest);
         
         if (selectedGuest) {
-          // Use the existing guest data
           onSubmit(selectedGuest);
           onClose();
           return;
         }
       }
 
-      // For new guest
       if (formMode === 'new' || !selectedGuestId) {
         if (!firstName.trim() || !lastName.trim()) {
           toast({
@@ -103,7 +118,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
           return;
         }
 
-        // Prepare data for new guest
         const guestData = {
           prenom: firstName,
           nom: lastName,
@@ -115,7 +129,6 @@ export function GuestForm({ projectId, onClose, onSubmit }: GuestFormProps) {
 
         console.log("Creating new guest with data:", guestData);
 
-        // Insert new guest into database
         const { data, error } = await supabase
           .from('guests')
           .insert([guestData])
