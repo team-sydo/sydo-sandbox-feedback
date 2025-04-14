@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { Image, Send, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ interface FeedbackFormProps {
   grainId: string;
   projectId: string;
   userId: string;
+  guestId?: string | null; // Added guestId as an optional property
   currentTime: number | null;
   isVideoType: boolean;
   onFeedbackSubmitted: () => void;
@@ -18,6 +20,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
   grainId,
   projectId,
   userId,
+  guestId,
   currentTime,
   isVideoType,
   onFeedbackSubmitted
@@ -129,6 +132,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
       } = supabase.storage.from('feedback-screenshots').getPublicUrl(filePath);
       const screenshotUrl = urlData.publicUrl;
 
+      // Update to include guestId in the feedback submission
       const {
         error
       } = await supabase.from('feedbacks').insert({
@@ -137,7 +141,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         content: annotationContent,
         timecode,
         screenshot_url: screenshotUrl,
-        user_id: userId,
+        user_id: userId || null,
+        guest_id: guestId || null,
         done: false
       });
       if (error) throw error;
@@ -190,6 +195,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         screenshotUrl = urlData.publicUrl;
       }
 
+      // Update to include guestId in the feedback submission
       const {
         error
       } = await supabase.from('feedbacks').insert({
@@ -198,7 +204,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         content,
         timecode,
         screenshot_url: screenshotUrl,
-        user_id: userId,
+        user_id: userId || null,
+        guest_id: guestId || null,
         done: false
       });
       if (error) throw error;
