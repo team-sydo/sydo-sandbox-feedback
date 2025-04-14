@@ -11,7 +11,7 @@ interface FeedbackFormProps {
   grainId: string;
   projectId: string;
   userId: string;
-  guestId?: string | null; // Added guestId as an optional property
+  guestId?: string | null; 
   currentTime: number | null;
   isVideoType: boolean;
   onFeedbackSubmitted: () => void;

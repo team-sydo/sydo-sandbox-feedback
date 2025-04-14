@@ -9,6 +9,7 @@ import { ArrowLeft, MessageCircle } from "lucide-react";
 import FeedbackForm from "@/components/GrainView/FeedbackForm";
 import FeedbacksList from "@/components/GrainView/FeedbacksList";
 import VideoPlayer from "@/components/GrainView/VideoPlayer";
+import PdfViewer from "@/components/GrainView/PdfViewer";
 import { GuestForm } from "@/components/GuestForm";
 import { Grain, Guest } from "@/types";
 import { EditCommentModal } from "@/components/comments/EditCommentModal";
@@ -364,17 +365,23 @@ export default function GrainView() {
             </button>
           </header>
 
-          {/* Contenu (iframe ou video) */}
+          {/* Contenu (iframe, video ou PDF) */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
-            {grain?.type === "web" ? (
+            {grain?.type === "web" || grain?.type === "figma" || grain?.type === "GSlide" ? (
               <iframe
                 ref={iframeRef}
                 src={grain.url}
                 className="w-full h-full border-0"
                 title={grain.title}
               />
-            ) : (
+            ) : grain?.type === "video" ? (
               <VideoPlayer url={grain?.url} onTimeUpdate={handleTimeUpdate} />
+            ) : grain?.type === "pdf" ? (
+              <PdfViewer url={grain?.url} />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500">Type de contenu non pris en charge</p>
+              </div>
             )}
           </div>
 

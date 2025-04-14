@@ -22,7 +22,7 @@ export interface Favorite {
 export interface Grain {
   id: string;
   title: string;
-  type: "web" | "video" | "figma" | "GSlide";
+  type: "web" | "video" | "figma" | "GSlide" | "pdf";
   url: string;
   done: boolean;
   project_id: string;

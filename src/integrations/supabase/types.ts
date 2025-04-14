@@ -305,7 +305,7 @@ export type Database = {
     Enums: {
       browser_type: "chrome" | "edge" | "firefox" | "safari" | "autre" | "arc"
       device_type: "mobile" | "ordinateur" | "tablette"
-      grain_type: "web" | "video" | "figma" | "GSlide"
+      grain_type: "web" | "video" | "figma" | "GSlide" | "pdf"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -423,7 +423,7 @@ export const Constants = {
     Enums: {
       browser_type: ["chrome", "edge", "firefox", "safari", "autre", "arc"],
       device_type: ["mobile", "ordinateur", "tablette"],
-      grain_type: ["web", "video", "figma", "GSlide"],
+      grain_type: ["web", "video", "figma", "GSlide", "pdf"],
     },
   },
 } as const
