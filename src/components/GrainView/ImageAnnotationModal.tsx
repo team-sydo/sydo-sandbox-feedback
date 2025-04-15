@@ -12,6 +12,7 @@ interface ImageAnnotationModalProps {
   imageFile: File | null;
   onSubmit: (content: string, annotatedImageUrl: string) => void;
   timecode?: number | null;
+  initialContent?: string; // Add initialContent prop
 }
 
 type AnnotationTool = 'select' | 'marker' | 'draw' | null;
@@ -21,13 +22,21 @@ const ImageAnnotationModal: React.FC<ImageAnnotationModalProps> = ({
   onClose,
   imageFile,
   onSubmit,
-  timecode
+  timecode,
+  initialContent = '' // Default to empty string
 }) => {
   const [content, setContent] = useState('');
   const [activeTool, setActiveTool] = useState<AnnotationTool>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Initialize content with initialContent when modal opens
+  useEffect(() => {
+    if (isOpen && initialContent) {
+      setContent(initialContent);
+    }
+  }, [isOpen, initialContent]);
 
   // Load image preview when file changes
   useEffect(() => {

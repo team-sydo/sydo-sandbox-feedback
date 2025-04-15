@@ -282,7 +282,14 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({
         <Send className="h-4 w-4" />
       </Button>
       
-      <ImageAnnotationModal isOpen={isAnnotationModalOpen} onClose={() => setIsAnnotationModalOpen(false)} imageFile={screenshotFile} onSubmit={handleAnnotationSubmit} timecode={currentTime} />
+      <ImageAnnotationModal 
+        isOpen={isAnnotationModalOpen} 
+        onClose={() => setIsAnnotationModalOpen(false)} 
+        imageFile={screenshotFile} 
+        onSubmit={handleAnnotationSubmit} 
+        timecode={currentTime}
+        initialContent={content} // Pass the current content to the modal
+      />
     </div>
   );
 };
