@@ -54,7 +54,17 @@ export default function Home() {
             ) : favoriteProjects?.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {favoriteProjects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
+                  <ProjectCard 
+                    key={project.id}
+                    id={project.id}
+                    title={project.title}
+                    client={project.client_id || ""}
+                    description={project.description || ""}
+                    sites={0} // You may want to fetch this data separately
+                    videos={0} // You may want to fetch this data separately
+                    status={project.active ? "actif" : "archivé"}
+                    isFavorite={true}
+                  />
                 ))}
               </div>
             ) : (

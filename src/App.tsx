@@ -29,7 +29,7 @@ function App() {
           
           {/* Protected routes with Layout */}
           <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
+            <Route element={<Layout>{/* The Layout component will receive the Outlet as children */}</Layout>}>
               <Route path="/home" element={<Home />} />
               <Route path="/dashboard" element={<Dashboard />} />
             </Route>
