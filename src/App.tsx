@@ -1,10 +1,12 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { Toaster } from './components/ui/toaster';
 import { ProtectedRoute, PublicRoute } from './components/RouteGuard';
+import { Layout } from './components/Layout';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import Index from './pages/Index';
 import ProjectView from './pages/ProjectView';
@@ -25,10 +27,19 @@ function App() {
             <Route path="/grain/:grainId" element={<GrainView />} />
           </Route>
           
-          {/* Protected routes */}
+          {/* Protected routes with Layout */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route element={<Layout />}>
+              <Route path="/home" element={<Home />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
           </Route>
+          
+          {/* Redirect /dashboard to /home when authenticated */}
+          <Route
+            path="/dashboard"
+            element={<Navigate to="/home" replace />}
+          />
           
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />
