@@ -32,6 +32,11 @@ const navigationItems = [
     icon: LayoutDashboard,
     path: "/dashboard",
   },
+  {
+    title: "Tâches",
+    icon: LayoutDashboard, // Choisis un icône plus adapté si tu veux, ex: CheckSquare
+    path: "/tasks",
+  },
 ];
 
 export function AppSidebar({ userName }: NavBarProps) {

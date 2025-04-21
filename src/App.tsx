@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './hooks/useAuth';
@@ -13,8 +12,8 @@ import Index from './pages/Index';
 import ProjectView from './pages/ProjectView';
 import GrainView from './pages/GrainView';
 import CommentsList from './pages/CommentsList';
+import TasksPage from './pages/TasksPage';
 
-// Create a client
 const queryClient = new QueryClient();
 
 function App() {
@@ -37,6 +36,7 @@ function App() {
               <Route element={<Layout />}>
                 <Route path="/home" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/tasks" element={<TasksPage />} />
               </Route>
             </Route>
             
