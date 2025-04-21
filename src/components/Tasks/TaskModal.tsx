@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -271,9 +271,14 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
 
   const onSubmit = async (form) => {
     try {
+      // Build the database object, removing the 'time' field which doesn't exist in the database
       const input = {
-        ...form,
+        title: form.title,
+        description: form.description,
+        status: form.status,
+        priority: form.priority,
         due_date: form.due_date ? form.due_date.toISOString() : null,
+        // Combine date and time for remind_at
         remind_at: combineRemindDateTime(form.remind_at, form.time)?.toISOString() ?? null,
         assigned_to: form.assigned_to,
         user_id: user.id,
@@ -314,6 +319,9 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg p-0 bg-white rounded-2xl shadow-lg border-0">
+        <DialogTitle className="sr-only">
+          {task?.id ? "Modifier la tâche" : "Créer une nouvelle tâche"}
+        </DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="p-8">
             <h2 className="font-semibold text-2xl mb-6">
