@@ -52,10 +52,8 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
   useEffect(() => {
     // Va chercher les projets existants de l'utilisateur connecté
     const fetchProjects = async () => {
-      let { data, error } = await supabase
-        .from("projects")
-        .select("id, title")
-        .eq("user_id", user.id);
+      let { data, error } = await supabase.from("projects").select("id, title");
+      // .eq("user_id", user.id);
       if (!error && Array.isArray(data)) setProjects(data);
     };
     if (user?.id) fetchProjects();
@@ -212,34 +210,36 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
             : "Aucun"}
         </ToggleDropdown>
         {open && (
-          <ScrollArea className="absolute mt-1 left-0 z-40 w-full max-h-56 bg-white border border-gray-200 shadow-xl rounded py-2">
-            {users.map((u) => (
-              <button
-                type="button"
-                className={cn(
-                  "flex w-full items-center px-3 py-2 text-base hover:bg-blue-50",
-                  assignedTo.includes(u.id) && "bg-blue-100"
-                )}
-                key={u.id}
-                onClick={() => {
-                  // toggle selection (multi)
-                  if (assignedTo.includes(u.id)) {
-                    setValue(
-                      "assigned_to",
-                      assignedTo.filter((x) => x !== u.id)
-                    );
-                  } else {
-                    setValue("assigned_to", [...assignedTo, u.id]);
-                  }
-                }}
-              >
-                {assignedTo.includes(u.id) && (
-                  <Check className="mr-2 w-4 h-4 text-blue-500" />
-                )}
-                {u.prenom} {u.nom}
-              </button>
-            ))}
-          </ScrollArea>
+          <div className="absolute">
+            <ScrollArea className="absolute mt-1 left-0 z-40 w-full max-h-56 bg-white border border-gray-200 shadow-xl rounded py-2">
+              {users.map((u) => (
+                <button
+                  type="button"
+                  className={cn(
+                    "flex w-full items-center px-3 py-2 text-base hover:bg-blue-50",
+                    assignedTo.includes(u.id) && "bg-blue-100"
+                  )}
+                  key={u.id}
+                  onClick={() => {
+                    // toggle selection (multi)
+                    if (assignedTo.includes(u.id)) {
+                      setValue(
+                        "assigned_to",
+                        assignedTo.filter((x) => x !== u.id)
+                      );
+                    } else {
+                      setValue("assigned_to", [...assignedTo, u.id]);
+                    }
+                  }}
+                >
+                  {assignedTo.includes(u.id) && (
+                    <Check className="mr-2 w-4 h-4 text-blue-500" />
+                  )}
+                  {u.prenom} {u.nom}
+                </button>
+              ))}
+            </ScrollArea>
+          </div>
         )}
       </div>
     );
@@ -302,8 +302,8 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
       <div className="relative">
         <ToggleDropdown open={open} setOpen={setOpen}>
           {projects.length
-            ? (projects.find((p) => p.id === watch("project_id"))?.title ||
-                "Sélectionner")
+            ? projects.find((p) => p.id === watch("project_id"))?.title ||
+              "Sélectionner"
             : "Chargement..."}
         </ToggleDropdown>
         {open && (
@@ -347,7 +347,10 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         assigned_to: form.assigned_to,
         user_id: user.id,
         parent_id: cleanUUID(form.parent_id),
-        project_id: form.project_id || projects[0]?.id || "00000000-0000-0000-0000-000000000000",
+        project_id:
+          form.project_id ||
+          projects[0]?.id ||
+          "00000000-0000-0000-0000-000000000000",
       };
 
       if (!input.parent_id) input.parent_id = null;
