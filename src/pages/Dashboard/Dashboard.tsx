@@ -169,7 +169,7 @@ export default function Dashboard() {
       <main className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Projets</h1>
+            <h1 className="text-3xl font-bold">Retours</h1>
             <div className="mt-4">
               <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value as 'all' | 'active' | 'archived' | 'favorites')}>
                 <ToggleGroupItem value="all">Tous</ToggleGroupItem>
