@@ -8,17 +8,24 @@ export function useTasks() {
 
   const fetchTasks = async () => {
     if (!user) return [];
+    
+    // Chercher les tâches créées par l'utilisateur ou qui lui sont assignées
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
       .or(`user_id.eq.${user.id},assigned_to.cs.{${user.id}}`)
       .order("position", { ascending: true });
-    if (error) throw error;
+      
+    if (error) {
+      console.error("Erreur lors de la récupération des tâches:", error);
+      throw error;
+    }
+    
     return data || [];
   };
 
   const { data: tasks = [], isLoading, refetch } = useQuery({
-    queryKey: ["tasks"],
+    queryKey: ["tasks", user?.id],
     queryFn: fetchTasks,
     enabled: !!user,
   });
