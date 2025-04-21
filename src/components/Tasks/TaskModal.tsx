@@ -426,7 +426,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                 <TasksDropdown />
               </div>
               {/* Rappel */}
-              <div>
+              {/* <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">
                   Rappel à
                 </label>
@@ -453,9 +453,9 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                     />
                   </PopoverContent>
                 </Popover>
-              </div>
+              </div> */}
               {/* Heure du rappel */}
-              <div>
+              {/* <div>
                 <label
                   htmlFor="time"
                   className="text-sm font-medium text-gray-700 block mb-1"
@@ -469,7 +469,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   placeholder="hh:mm"
                   className="bg-white border border-gray-200"
                 />
-              </div>
+              </div> */}
               {/* Priorité (dropdown custom) */}
               <div>
                 <label

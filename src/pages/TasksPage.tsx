@@ -61,7 +61,7 @@ export default function TasksPage() {
     <div className="bg-[#F6F6F7] min-h-screen">
       <div className="max-w-4xl mx-auto py-10 px-6">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Mes Tâches</h1>
+          <h1 className="text-3xl font-bold">Todo</h1>
           <Button
             className="bg-[#1EAEDB] hover:bg-[#0FA0CE] transition text-white font-medium rounded-md px-5 py-2 text-base"
             onClick={() => {
@@ -75,8 +75,8 @@ export default function TasksPage() {
 
         <Tabs defaultValue="created" className="w-full">
           <TabsList className="w-full mb-8 bg-white">
-            <TabsTrigger value="created" className="flex-1">Tâches créées</TabsTrigger>
-            <TabsTrigger value="assigned" className="flex-1">Tâches assignées</TabsTrigger>
+            <TabsTrigger value="created" className="flex-1">Mes tâches</TabsTrigger>
+            <TabsTrigger value="assigned" className="flex-1">Tâches partagées</TabsTrigger>
           </TabsList>
           
           {/* Filtres */}
@@ -96,7 +96,7 @@ export default function TasksPage() {
           <TabsContent value="created">
             <Card>
               <CardHeader>
-                <CardTitle>Tâches créées par moi</CardTitle>
+                <CardTitle>Mes tâches</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredCreatedTasks.length === 0 ? (
@@ -115,7 +115,7 @@ export default function TasksPage() {
           <TabsContent value="assigned">
             <Card>
               <CardHeader>
-                <CardTitle>Tâches qui me sont assignées</CardTitle>
+                <CardTitle>Tâches partagées</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredAssignedTasks.length === 0 ? (

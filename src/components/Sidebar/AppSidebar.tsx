@@ -33,7 +33,7 @@ const navigationItems = [
     path: "/dashboard",
   },
   {
-    title: "Tâches",
+    title: "Todo",
     icon: LayoutDashboard, // Choisis un icône plus adapté si tu veux, ex: CheckSquare
     path: "/tasks",
   },
