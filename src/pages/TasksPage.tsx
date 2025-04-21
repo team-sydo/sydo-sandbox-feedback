@@ -3,25 +3,48 @@ import React, { useState } from "react";
 import { useTasks } from "@/hooks/useTasks";
 import { Button } from "@/components/ui/button";
 import { TaskModal } from "@/components/Tasks/TaskModal";
-import { Plus } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+
+const STATUS_OPTIONS = [
+  { label: "À faire", value: "à faire" },
+  { label: "En cours", value: "en cours" },
+  { label: "Fait", value: "fait" },
+  { label: "Archivée", value: "archivée" },
+];
 
 export default function TasksPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const { tasks, isLoading, refetch } = useTasks();
+  const { user } = useAuth();
 
-  // Séparer les tâches créées par moi et celles où je suis assigné
-  const me = tasks.filter(
-    (t) => t.user_id && editTask?.user && t.user_id === editTask?.user.id
-  ); // fallback, mais on ne dispose pas du user ici, donc ignore
+  // Pour la modification inline du statut :
+  const handleStatusChange = async (taskId, status) => {
+    // update direct du statut
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.from("tasks").update({ status }).eq("id", taskId);
+    refetch();
+  };
+
+  // Permet la suppression
+  const handleDelete = async (taskId) => {
+    if (!window.confirm("Supprimer cette tâche ?")) return;
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.from("tasks").delete().eq("id", taskId);
+    refetch();
+  };
 
   // Catégorisation
-  const createdByMe = tasks.filter(
-    (t) => t.user_id && t.user_id === (editTask?.user?.id || t.user_id)
-  );
-  const assignedToMe = tasks.filter(
-    (t) => Array.isArray(t.assigned_to) && t.assigned_to.includes(editTask?.user?.id)
-  );
+  const createdByMe = user
+    ? tasks.filter((t) => t.user_id === user.id)
+    : [];
+  const assignedToMe = user
+    ? tasks.filter((t) =>
+        Array.isArray(t.assigned_to) && t.assigned_to.includes(user.id)
+      )
+    : [];
 
   if (isLoading) {
     return (
@@ -45,50 +68,83 @@ export default function TasksPage() {
           </Button>
         </div>
 
-        {/* Filtres */}
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant="outline"
-            className="text-gray-700 bg-white border border-gray-200 shadow-none rounded-md px-5"
-          >
-            Filtre rapide
-          </Button>
-          <Button
-            variant="outline"
-            className="text-gray-700 bg-white border border-gray-200 shadow-none rounded-md px-5"
-          >
-            Tri par
-          </Button>
-        </div>
-
         {/* Tâches créées par moi */}
         <section>
           <h2 className="text-lg font-semibold mb-2 mt-10 border-t border-gray-200 pt-6">
             Tâches créées par moi
           </h2>
-          {/* À remplacer par TaskList en colonne simple */}
           <div>
             {createdByMe.length === 0 ? (
               <div className="text-gray-400 text-sm">Aucune tâche</div>
             ) : (
-              <ul className="space-y-3">
+              <ul className="divide-y">
                 {createdByMe.map((task) => (
                   <li
                     key={task.id}
-                    className="flex items-center bg-white rounded-lg px-4 py-3 justify-between border border-gray-100 shadow-sm"
+                    className="flex items-center px-4 py-4 justify-between bg-white hover:bg-gray-50 rounded-lg transition border border-gray-100 shadow-sm"
                   >
-                    <span className={`flex-1 font-medium text-lg ${task.status === "fait" ? "line-through text-green-700" : "text-gray-900"}`}>
-                      {task.title}
-                    </span>
-                    {task.priority === "urgent" && (
-                      <span className="bg-orange-100 text-orange-600 font-bold rounded px-3 py-1 text-xs ml-4">
-                        Urgente
+                    {/* Title + Priority */}
+                    <div className="flex-1 pr-3">
+                      <span
+                        className={cn(
+                          "font-medium text-lg",
+                          task.status === "fait"
+                            ? "line-through text-green-600"
+                            : "text-gray-900"
+                        )}
+                      >
+                        {task.title}
                       </span>
-                    )}
-                    <span className="ml-4 text-sm text-gray-500">
-                      {/* Supposons "20 avr" comme date exemple */}
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : null}
+                      {task.priority === "urgent" && (
+                        <span className="bg-orange-100 text-orange-600 font-bold rounded px-3 py-1 text-xs ml-4">
+                          Urgente
+                        </span>
+                      )}
+                    </div>
+                    {/* Due date */}
+                    <span className="text-sm text-gray-500 w-24">
+                      {task.due_date
+                        ? new Date(task.due_date).toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : null}
                     </span>
+                    {/* Status dropdown inline */}
+                    <select
+                      className="ml-4 bg-gray-100 border border-gray-200 text-sm rounded-md px-2 py-1"
+                      value={task.status}
+                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditTask(task);
+                          setOpenModal(true);
+                        }}
+                        title="Modifier"
+                      >
+                        <Edit size={18} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(task.id)}
+                        title="Supprimer"
+                      >
+                        <Trash2 size={18} />
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -105,18 +161,64 @@ export default function TasksPage() {
             {assignedToMe.length === 0 ? (
               <div className="text-gray-400 text-sm">Aucune tâche</div>
             ) : (
-              <ul className="space-y-3">
+              <ul className="divide-y">
                 {assignedToMe.map((task) => (
                   <li
                     key={task.id}
-                    className="flex items-center bg-white rounded-lg px-4 py-3 border border-gray-100 shadow-sm"
+                    className="flex items-center px-4 py-4 bg-white rounded-lg transition border border-gray-100 shadow-sm"
                   >
-                    <span className={`flex-1 font-medium text-lg ${task.status === "fait" ? "line-through text-green-700" : "text-gray-900"}`}>
-                      {task.title}
+                    <div className="flex-1 pr-3">
+                      <span
+                        className={cn(
+                          "font-medium text-lg",
+                          task.status === "fait"
+                            ? "line-through text-green-600"
+                            : "text-gray-900"
+                        )}
+                      >
+                        {task.title}
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500 w-24">
+                      {task.due_date
+                        ? new Date(task.due_date).toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : null}
                     </span>
-                    <span className="ml-4 text-sm text-gray-500">
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }) : null}
-                    </span>
+                    <select
+                      className="ml-4 bg-gray-100 border border-gray-200 text-sm rounded-md px-2 py-1 "
+                      value={task.status}
+                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditTask(task);
+                          setOpenModal(true);
+                        }}
+                        title="Modifier"
+                      >
+                        <Edit size={18} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(task.id)}
+                        title="Supprimer"
+                      >
+                        <Trash2 size={18} />
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -132,6 +234,7 @@ export default function TasksPage() {
             setEditTask(null);
           }}
           refetch={refetch}
+          allTasks={tasks}
         />
       )}
     </div>
