@@ -28,7 +28,7 @@ const navigationItems = [
     path: "/home",
   },
   {
-    title: "Dashboard",
+    title: "Retours",
     icon: LayoutDashboard,
     path: "/dashboard",
   },
