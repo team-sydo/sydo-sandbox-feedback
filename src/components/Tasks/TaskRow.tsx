@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash, Edit, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export function TaskRow({ task, onEdit, refetch, depth }) {
   const [open, setOpen] = useState(true);
@@ -32,15 +33,27 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
     refetch();
   };
 
-  // Format des assignations pour l'affichage
   const assignedNames =
     task.assignedUsers && task.assignedUsers.length > 0
       ? task.assignedUsers.map((user) => user.prenom).join(", ")
       : null;
 
-  // Info sur le créateur
   const creatorName = task.creator ? task.creator.prenom : "Inconnu";
   const isTaskCreator = user && task.user_id === user.id;
+
+  const [projectTitle, setProjectTitle] = useState("");
+  useEffect(() => {
+    async function fetchProjectTitle() {
+      if (!task.project_id) return;
+      const { data, error } = await supabase
+        .from("projects")
+        .select("title")
+        .eq("id", task.project_id)
+        .maybeSingle();
+      if (data?.title) setProjectTitle(data.title);
+    }
+    fetchProjectTitle();
+  }, [task.project_id]);
 
   return (
     <li
@@ -50,7 +63,6 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
       )}
     >
       <div className="flex items-start justify-between">
-        {/* titre et descro */}
         <div className="flex items-center gap-2 flex-1">
           <div>
             <span
@@ -64,7 +76,6 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
             <p className="text-xs">{task.description} </p>
           </div>
         </div>
-        {/* bouton et info subtasks */}
         <div className="m-1 flex items-center gap-1">
           {open ? <span></span> : <span> + {task.subtasks.length}</span>}
           {task.subtasks?.length > 0 && (
@@ -81,7 +92,6 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
           )}
         </div>
 
-        {/* Actions */}
         <div className="">
           <div className="flex items-center gap-2">
             <select
@@ -121,7 +131,6 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
         </div>
       </div>
       <div className="flex items-center w-full justify-between">
-        {/* Afficher les priorités et dates */}
         <div className="flex flex-wrap gap-2 text-xs text-gray-500 mt-1">
           {task.priority === "urgent" && (
             <span className=" text-orange-600 p-0.5 font-medium text-xs">
@@ -137,8 +146,36 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
               })}
             </span>
           )}
+
+          {projectTitle && (
+            <Badge
+              className="bg-[#E5DEFF] text-[#6E59A5] rounded px-2 py-0.5 font-semibold text-xs border-none"
+              style={{
+                marginLeft: "5px",
+                letterSpacing: "0.02em",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              <span className="inline-block align-middle mr-1">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#6E59A5"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                >
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2Z" />
+                </svg>
+              </span>
+              {projectTitle}
+            </Badge>
+          )}
         </div>
-        {/* Afficher les infos sur qui est assigné ou qui a créé */}
         <div className="">
           {isTaskCreator && assignedNames && (
             <span className=" text-purple-600 px-0.5 py-0.5 text-xs">
@@ -152,7 +189,6 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
           )}
         </div>
       </div>
-
       {open && task.subtasks?.length > 0 && (
         <ul className="mt-2">
           {task.subtasks.map((subtask) => (

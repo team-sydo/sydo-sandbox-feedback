@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,18 +21,20 @@ export function useTasks() {
     }
 
     // Récupérer les informations des utilisateurs pour l'affichage des assignations
-    const userIds = new Set();
+    const userIds = new Set<string>();
     tasks.forEach(task => {
-      userIds.add(task.user_id);
+      if (typeof task.user_id === "string") userIds.add(task.user_id);
       if (task.assigned_to && Array.isArray(task.assigned_to)) {
-        task.assigned_to.forEach(id => userIds.add(id));
+        task.assigned_to.forEach(id => {
+          if (typeof id === "string") userIds.add(id);
+        });
       }
     });
 
     const { data: users, error: usersError } = await supabase
       .from("users")
       .select("id, prenom, nom")
-      .in('id', Array.from(userIds));
+      .in('id', Array.from(userIds) as string[]);
 
     if (usersError) {
       console.error("Erreur lors de la récupération des utilisateurs:", usersError);

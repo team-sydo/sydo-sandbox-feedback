@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, ChevronDown, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const STATUS_OPTIONS = [
   { label: "À faire", value: "à faire" },
@@ -45,6 +46,20 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
     };
     fetchUsers();
   }, []);
+
+  // Pour dropdown projets
+  const [projects, setProjects] = useState([]);
+  useEffect(() => {
+    // Va chercher les projets existants de l'utilisateur connecté
+    const fetchProjects = async () => {
+      let { data, error } = await supabase
+        .from("projects")
+        .select("id, title")
+        .eq("user_id", user.id);
+      if (!error && Array.isArray(data)) setProjects(data);
+    };
+    if (user?.id) fetchProjects();
+  }, [user?.id]);
 
   // Pour dropdown tâches existantes
   const taskOptions = useMemo(
@@ -76,6 +91,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
       assigned_to: [],
       parent_id: "",
       time: "",
+      project_id: "",
     },
   });
 
@@ -97,6 +113,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         "time",
         task.remind_at ? format(new Date(task.remind_at), "HH:mm") : ""
       );
+      setValue("project_id", task.project_id || "");
     } else {
       reset();
     }
@@ -278,26 +295,61 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
     );
   }
 
+  function ProjectsDropdown() {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div className="relative">
+        <ToggleDropdown open={open} setOpen={setOpen}>
+          {projects.length
+            ? (projects.find((p) => p.id === watch("project_id"))?.title ||
+                "Sélectionner")
+            : "Chargement..."}
+        </ToggleDropdown>
+        {open && (
+          <div className="absolute mt-1 left-0 z-50 w-full bg-white border border-gray-200 shadow-xl rounded py-2">
+            {projects.map((project) => (
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center px-3 py-2 text-base hover:bg-blue-50",
+                  watch("project_id") === project.id && "bg-blue-100"
+                )}
+                key={project.id}
+                onClick={() => {
+                  setValue("project_id", project.id);
+                  setOpen(false);
+                }}
+              >
+                {watch("project_id") === project.id && (
+                  <Check className="mr-2 w-4 h-4 text-blue-500" />
+                )}
+                {project.title}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const onSubmit = async (form) => {
     try {
-      // Build the database object, removing the 'time' field which doesn't exist in the database
       const input = {
         title: form.title,
         description: form.description,
         status: form.status,
         priority: form.priority,
         due_date: form.due_date ? form.due_date.toISOString() : null,
-        // Combine date and time for remind_at
         remind_at:
           combineRemindDateTime(form.remind_at, form.time)?.toISOString() ??
           null,
         assigned_to: form.assigned_to,
         user_id: user.id,
         parent_id: cleanUUID(form.parent_id),
-        project_id: task?.project_id || "00000000-0000-0000-0000-000000000000",
+        project_id: form.project_id || projects[0]?.id || "00000000-0000-0000-0000-000000000000",
       };
 
-      // Correction bug uuid empty string
       if (!input.parent_id) input.parent_id = null;
 
       if (task?.id) {
@@ -345,15 +397,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
               <h2 className="font-semibold text-2xl">
                 {task?.id ? "Modifier la tâche" : "Créer une nouvelle tâche"}
               </h2>
-              {/* Statut */}
-
               <div>
-                {/* <label
-                  htmlFor="status"
-                  className="text-sm font-medium text-gray-700 block mb-1"
-                >
-                  Statut
-                </label> */}
                 <select
                   id="status"
                   className="w-full border border-gray-200 rounded px-3 py-2 bg-white text-base"
@@ -368,7 +412,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-start">
-              {/* Titre */}
               <div className="col-span-2">
                 <label
                   htmlFor="title"
@@ -387,7 +430,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   </div>
                 )}
               </div>
-              {/* Description */}
               <div className="col-span-2">
                 <label
                   htmlFor="description"
@@ -403,7 +445,16 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                 />
               </div>
 
-              {/* Assignés (multi dropdown) */}
+              <div>
+                <label
+                  htmlFor="project_id"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
+                  Projet associé
+                </label>
+                <ProjectsDropdown />
+              </div>
+
               <div>
                 <label
                   htmlFor="assigned_to"
@@ -413,7 +464,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                 </label>
                 <UsersDropdown />
               </div>
-              {/* Date limite */}
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">
                   Date limite
@@ -446,7 +496,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   </PopoverContent>
                 </Popover>
               </div>
-              {/* Sous-tâche de (dropdown) */}
               <div>
                 <label
                   htmlFor="parent_id"
@@ -456,52 +505,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                 </label>
                 <TasksDropdown />
               </div>
-              {/* Rappel */}
-              {/* <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Rappel à
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex justify-between items-center px-3 py-2 bg-white border border-gray-200"
-                    >
-                      {remindDate
-                        ? format(remindDate, "dd/MM/yyyy")
-                        : <span>Choisir date</span>}
-                      <CalendarIcon className="ml-2 h-4 w-4 text-gray-400" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-50" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={remindDate}
-                      onSelect={(d) => setValue("remind_at", d)}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div> */}
-              {/* Heure du rappel */}
-              {/* <div>
-                <label
-                  htmlFor="time"
-                  className="text-sm font-medium text-gray-700 block mb-1"
-                >
-                  Heure
-                </label>
-                <Input
-                  id="time"
-                  type="time"
-                  {...register("time")}
-                  placeholder="hh:mm"
-                  className="bg-white border border-gray-200"
-                />
-              </div> */}
-              {/* Priorité (dropdown custom) */}
               <div>
                 <label
                   htmlFor="priority"
@@ -512,7 +515,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                 <PriorityDropdown />
               </div>
             </div>
-            {/* Boutons */}
             <div className="flex justify-end gap-2 mt-8">
               <Button
                 type="button"
