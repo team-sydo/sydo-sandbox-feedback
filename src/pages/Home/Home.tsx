@@ -1,14 +1,20 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProjectCard } from "@/components/ProjectCard";
+import { TaskList } from "@/components/Tasks/TaskList";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function Home() {
   const { user } = useAuth();
   const { favoriteProjectIds, loading: favoritesLoading } = useFavorites();
+  const { tasks, isLoading: tasksLoading, refetch } = useTasks();
 
   const { data: favoriteProjects, isLoading: projectsLoading } = useQuery({
     queryKey: ['favoriteProjects', favoriteProjectIds],
@@ -25,7 +31,8 @@ export default function Home() {
     enabled: favoriteProjectIds.length > 0,
   });
 
-  const isLoading = favoritesLoading || projectsLoading;
+  const isLoading = favoritesLoading || projectsLoading || tasksLoading;
+  const userTasks = tasks.slice(0, 5); // Limiter à 5 tâches pour l'aperçu
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -37,6 +44,37 @@ export default function Home() {
               Bienvenue, {user?.user_metadata?.prenom || 'Utilisateur'}
             </CardTitle>
           </CardHeader>
+        </Card>
+
+        {/* Tasks Section */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Mes Tâches Récentes</CardTitle>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/tasks">
+                Voir toutes
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {tasksLoading ? (
+              <div className="h-32 bg-muted animate-pulse rounded-lg" />
+            ) : userTasks?.length ? (
+              <TaskList tasks={userTasks} onEdit={() => {}} refetch={refetch} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Vous n'avez pas encore de tâches.
+                </p>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/tasks">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer une tâche
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
         {/* Favorites Section */}
@@ -60,8 +98,8 @@ export default function Home() {
                     title={project.title}
                     client={project.client_id || ""}
                     description={project.description || ""}
-                    sites={0} // You may want to fetch this data separately
-                    videos={0} // You may want to fetch this data separately
+                    sites={0}
+                    videos={0}
                     status={project.active ? "actif" : "archivé"}
                     isFavorite={true}
                   />

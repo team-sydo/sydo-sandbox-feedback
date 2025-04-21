@@ -19,12 +19,18 @@ export function TaskList({ tasks, onEdit, refetch }) {
     <div>
       {tree.length === 0 ? (
         <div className="text-muted-foreground text-center py-16">
-          Aucune tâche pour l’instant.
+          Aucune tâche pour l'instant.
         </div>
       ) : (
         <ul className="space-y-2">
           {tree.map((task) => (
-            <TaskRow key={task.id} task={task} onEdit={onEdit} refetch={refetch} depth={0} />
+            <TaskRow 
+              key={task.id} 
+              task={task} 
+              onEdit={onEdit} 
+              refetch={refetch} 
+              depth={0} 
+            />
           ))}
         </ul>
       )}

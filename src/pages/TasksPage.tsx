@@ -3,9 +3,11 @@ import React, { useState } from "react";
 import { useTasks } from "@/hooks/useTasks";
 import { Button } from "@/components/ui/button";
 import { TaskModal } from "@/components/Tasks/TaskModal";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { TaskList } from "@/components/Tasks/TaskList";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const STATUS_OPTIONS = [
   { label: "À faire", value: "à faire" },
@@ -14,37 +16,40 @@ const STATUS_OPTIONS = [
   { label: "Archivée", value: "archivée" },
 ];
 
+const FILTER_OPTIONS = [
+  { label: "Toutes", value: "all" },
+  { label: "À faire", value: "à faire" },
+  { label: "En cours", value: "en cours" },
+  { label: "Urgentes", value: "urgent" },
+];
+
 export default function TasksPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
+  const [filter, setFilter] = useState("all");
   const { tasks, isLoading, refetch } = useTasks();
   const { user } = useAuth();
 
-  // Pour la modification inline du statut :
-  const handleStatusChange = async (taskId, status) => {
-    // update direct du statut
-    const { supabase } = await import("@/integrations/supabase/client");
-    await supabase.from("tasks").update({ status }).eq("id", taskId);
-    refetch();
+  const handleEdit = (task) => {
+    setEditTask(task);
+    setOpenModal(true);
   };
 
-  // Permet la suppression
-  const handleDelete = async (taskId) => {
-    if (!window.confirm("Supprimer cette tâche ?")) return;
-    const { supabase } = await import("@/integrations/supabase/client");
-    await supabase.from("tasks").delete().eq("id", taskId);
-    refetch();
+  // Récupérer les tâches selon les différentes catégories
+  const createdByMe = user ? tasks.filter(t => t.user_id === user.id) : [];
+  const assignedToMe = user ? tasks.filter(t => 
+    Array.isArray(t.assigned_to) && t.assigned_to.includes(user.id) && t.user_id !== user.id
+  ) : [];
+
+  // Filtrer selon l'onglet sélectionné
+  const filterTasks = (taskList) => {
+    if (filter === "all") return taskList;
+    if (filter === "urgent") return taskList.filter(t => t.priority === "urgent");
+    return taskList.filter(t => t.status === filter);
   };
 
-  // Catégorisation
-  const createdByMe = user
-    ? tasks.filter((t) => t.user_id === user.id)
-    : [];
-  const assignedToMe = user
-    ? tasks.filter((t) =>
-        Array.isArray(t.assigned_to) && t.assigned_to.includes(user.id)
-      )
-    : [];
+  const filteredCreatedTasks = filterTasks(createdByMe);
+  const filteredAssignedTasks = filterTasks(assignedToMe);
 
   if (isLoading) {
     return (
@@ -68,163 +73,64 @@ export default function TasksPage() {
           </Button>
         </div>
 
-        {/* Tâches créées par moi */}
-        <section>
-          <h2 className="text-lg font-semibold mb-2 mt-10 border-t border-gray-200 pt-6">
-            Tâches créées par moi
-          </h2>
-          <div>
-            {createdByMe.length === 0 ? (
-              <div className="text-gray-400 text-sm">Aucune tâche</div>
-            ) : (
-              <ul className="divide-y">
-                {createdByMe.map((task) => (
-                  <li
-                    key={task.id}
-                    className="flex items-center px-4 py-4 justify-between bg-white hover:bg-gray-50 rounded-lg transition border border-gray-100 shadow-sm"
-                  >
-                    {/* Title + Priority */}
-                    <div className="flex-1 pr-3">
-                      <span
-                        className={cn(
-                          "font-medium text-lg",
-                          task.status === "fait"
-                            ? "line-through text-green-600"
-                            : "text-gray-900"
-                        )}
-                      >
-                        {task.title}
-                      </span>
-                      {task.priority === "urgent" && (
-                        <span className="bg-orange-100 text-orange-600 font-bold rounded px-3 py-1 text-xs ml-4">
-                          Urgente
-                        </span>
-                      )}
-                    </div>
-                    {/* Due date */}
-                    <span className="text-sm text-gray-500 w-24">
-                      {task.due_date
-                        ? new Date(task.due_date).toLocaleDateString("fr-FR", {
-                            day: "2-digit",
-                            month: "short",
-                          })
-                        : null}
-                    </span>
-                    {/* Status dropdown inline */}
-                    <select
-                      className="ml-4 bg-gray-100 border border-gray-200 text-sm rounded-md px-2 py-1"
-                      value={task.status}
-                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditTask(task);
-                          setOpenModal(true);
-                        }}
-                        title="Modifier"
-                      >
-                        <Edit size={18} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(task.id)}
-                        title="Supprimer"
-                      >
-                        <Trash2 size={18} />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+        <Tabs defaultValue="created" className="w-full">
+          <TabsList className="w-full mb-8 bg-white">
+            <TabsTrigger value="created" className="flex-1">Tâches créées</TabsTrigger>
+            <TabsTrigger value="assigned" className="flex-1">Tâches assignées</TabsTrigger>
+          </TabsList>
+          
+          {/* Filtres */}
+          <div className="flex mb-4">
+            {FILTER_OPTIONS.map(option => (
+              <Button 
+                key={option.value}
+                variant={filter === option.value ? "default" : "outline"}
+                className="mr-2"
+                onClick={() => setFilter(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
-        </section>
 
-        {/* Tâches où je suis assigné */}
-        <section>
-          <h2 className="text-lg font-semibold mb-2 mt-10 border-t border-gray-200 pt-6">
-            Tâches où je suis assigné
-          </h2>
-          <div>
-            {assignedToMe.length === 0 ? (
-              <div className="text-gray-400 text-sm">Aucune tâche</div>
-            ) : (
-              <ul className="divide-y">
-                {assignedToMe.map((task) => (
-                  <li
-                    key={task.id}
-                    className="flex items-center px-4 py-4 bg-white rounded-lg transition border border-gray-100 shadow-sm"
-                  >
-                    <div className="flex-1 pr-3">
-                      <span
-                        className={cn(
-                          "font-medium text-lg",
-                          task.status === "fait"
-                            ? "line-through text-green-600"
-                            : "text-gray-900"
-                        )}
-                      >
-                        {task.title}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-500 w-24">
-                      {task.due_date
-                        ? new Date(task.due_date).toLocaleDateString("fr-FR", {
-                            day: "2-digit",
-                            month: "short",
-                          })
-                        : null}
-                    </span>
-                    <select
-                      className="ml-4 bg-gray-100 border border-gray-200 text-sm rounded-md px-2 py-1 "
-                      value={task.status}
-                      onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex items-center gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditTask(task);
-                          setOpenModal(true);
-                        }}
-                        title="Modifier"
-                      >
-                        <Edit size={18} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(task.id)}
-                        title="Supprimer"
-                      >
-                        <Trash2 size={18} />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
+          <TabsContent value="created">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tâches créées par moi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredCreatedTasks.length === 0 ? (
+                  <div className="text-gray-400 text-center py-8">Aucune tâche ne correspond à ce filtre</div>
+                ) : (
+                  <TaskList 
+                    tasks={filteredCreatedTasks} 
+                    onEdit={handleEdit} 
+                    refetch={refetch} 
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="assigned">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tâches qui me sont assignées</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredAssignedTasks.length === 0 ? (
+                  <div className="text-gray-400 text-center py-8">Aucune tâche ne correspond à ce filtre</div>
+                ) : (
+                  <TaskList 
+                    tasks={filteredAssignedTasks} 
+                    onEdit={handleEdit} 
+                    refetch={refetch} 
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       {openModal && (
         <TaskModal
