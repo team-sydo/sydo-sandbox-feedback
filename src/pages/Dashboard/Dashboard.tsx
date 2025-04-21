@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
-import { NavBar } from "@/components/NavBar";
+// import { NavBar } from "@/components/NavBar";
 import { ProjectsList } from "./components/ProjectsList";
 import { useToast } from "@/hooks/use-toast";
 import { NewProjectDialog } from "./components/NewProjectDialog";
@@ -165,7 +165,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar userName={userName} />
+      {/* <NavBar userName={userName} /> */}
       <main className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-8">
           <div>

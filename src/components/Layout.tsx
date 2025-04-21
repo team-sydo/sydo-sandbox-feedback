@@ -2,7 +2,7 @@
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar/AppSidebar";
-import { NavBar } from "@/components/NavBar";
+// import { NavBar } from "@/components/NavBar";
 import { useAuth } from "@/hooks/useAuth";
 
 export function Layout() {
@@ -12,9 +12,9 @@ export function Layout() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar />
+        <AppSidebar userName={userName}/>
         <div className="flex-1">
-          <NavBar userName={userName} />
+          {/* <NavBar userName={userName} /> */}
           <SidebarInset>
             <div className="relative">
               <div className="absolute left-4 top-4">
