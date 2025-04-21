@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && location.pathname === '/auth') {
           // Only redirect if we're on the auth page
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/home');
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           // Only redirect to auth page if NOT on a project view page, grain view page, comments list page or home page

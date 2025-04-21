@@ -42,7 +42,7 @@ function App() {
             
             {/* Redirect /dashboard to /home when authenticated */}
             <Route
-              path="/dashboard"
+              path="/home"
               element={<Navigate to="/home" replace />}
             />
             

@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-export function TaskRow({ task, onEdit, refetch, depth }) {
+export function TaskRowHome({ task, onEdit, refetch, depth }) {
   const [open, setOpen] = useState(true);
   const { user } = useAuth();
 
@@ -49,23 +49,21 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
         depth > 0 && "ml-8 border-l-2 border-gray-200"
       )}
     >
-      <div className="flex items-start justify-between">
-        {/* titre et descro */}
-        <div className="flex items-center gap-2 flex-1">
-          <div>
-            <span
-              className={cn(
-                "font-semibold block",
-                task.status === "fait" && "line-through text-green-600"
-              )}
-            >
-              {task.title}
-            </span>
-            <p className="text-xs">{task.description} </p>
-          </div>
-        </div>
-        {/* bouton et info subtasks */}
-        <div className="m-1 flex items-center gap-1">
+      <div className="items-start justify-between">
+        <div className="flex justify-between">
+        <select
+          className="text-sm bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-gray-800"
+          value={task.status}
+          onChange={handleStatusChange}
+        >
+          {statusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+         {/* bouton et info subtasks */}
+         <div className="m-1 flex items-center gap-1">
           {open ? <span></span> : <span> + {task.subtasks.length}</span>}
           {task.subtasks?.length > 0 && (
             <button
@@ -81,20 +79,27 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="">
-          <div className="flex items-center gap-2">
-            <select
-              className="text-sm bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-gray-800"
-              value={task.status}
-              onChange={handleStatusChange}
+        </div>
+        {/* titre et descro */}
+        <div className="flex items-center gap-2 flex-1">
+          <div>
+            <span
+              className={cn(
+                "block text-sm",
+                task.status === "fait" && "line-through text-green-600"
+              )}
             >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              {task.title}
+            </span>
+            {/* <p className="text-xs">{task.description} </p> */}
+          </div>
+        </div>
+       
+
+        {/* Actions */}
+        {/* <div className="">
+          <div className="flex items-center gap-2">
+           
 
             <Button
               size="sm"
@@ -118,7 +123,7 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
               </Button>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
       <div className="flex items-center w-full justify-between">
         {/* Afficher les priorités et dates */}
@@ -156,7 +161,7 @@ export function TaskRow({ task, onEdit, refetch, depth }) {
       {open && task.subtasks?.length > 0 && (
         <ul className="mt-2">
           {task.subtasks.map((subtask) => (
-            <TaskRow
+            <TaskRowHome
               key={subtask.id}
               task={subtask}
               onEdit={onEdit}

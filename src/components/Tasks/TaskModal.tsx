@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, ChevronDown, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -83,11 +86,17 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
       setValue("description", task.description || "");
       setValue("status", task.status || "à faire");
       setValue("priority", task.priority || "low");
-      setValue("assigned_to", Array.isArray(task.assigned_to) ? task.assigned_to : []);
+      setValue(
+        "assigned_to",
+        Array.isArray(task.assigned_to) ? task.assigned_to : []
+      );
       setValue("parent_id", task.parent_id || "");
       setValue("due_date", task.due_date ? new Date(task.due_date) : null);
       setValue("remind_at", task.remind_at ? new Date(task.remind_at) : null);
-      setValue("time", task.remind_at ? format(new Date(task.remind_at), "HH:mm") : "");
+      setValue(
+        "time",
+        task.remind_at ? format(new Date(task.remind_at), "HH:mm") : ""
+      );
     } else {
       reset();
     }
@@ -138,10 +147,8 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
     return (
       <div className="relative">
         <ToggleDropdown open={open} setOpen={setOpen}>
-          {
-            PRIORITY_OPTIONS.find((opt) => opt.value === priority)?.label ||
-            "Choisir"
-          }
+          {PRIORITY_OPTIONS.find((opt) => opt.value === priority)?.label ||
+            "Choisir"}
         </ToggleDropdown>
         {open && (
           <div className="absolute mt-1 left-0 z-40 w-full bg-white border border-gray-200 shadow-xl rounded py-2">
@@ -158,7 +165,9 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   setOpen(false);
                 }}
               >
-                {priority === opt.value && <Check className="mr-2 w-4 h-4 text-blue-500" />}
+                {priority === opt.value && (
+                  <Check className="mr-2 w-4 h-4 text-blue-500" />
+                )}
                 {opt.label}
               </button>
             ))}
@@ -279,7 +288,9 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         priority: form.priority,
         due_date: form.due_date ? form.due_date.toISOString() : null,
         // Combine date and time for remind_at
-        remind_at: combineRemindDateTime(form.remind_at, form.time)?.toISOString() ?? null,
+        remind_at:
+          combineRemindDateTime(form.remind_at, form.time)?.toISOString() ??
+          null,
         assigned_to: form.assigned_to,
         user_id: user.id,
         parent_id: cleanUUID(form.parent_id),
@@ -290,7 +301,10 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
       if (!input.parent_id) input.parent_id = null;
 
       if (task?.id) {
-        const { error } = await supabase.from("tasks").update(input).eq("id", task.id);
+        const { error } = await supabase
+          .from("tasks")
+          .update(input)
+          .eq("id", task.id);
         if (error) throw error;
         toast({
           title: "Tâche mise à jour",
@@ -307,7 +321,10 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
       refetch();
       onClose();
     } catch (error) {
-      console.error("Erreur lors de la création/modification de la tâche:", error);
+      console.error(
+        "Erreur lors de la création/modification de la tâche:",
+        error
+      );
       toast({
         title: "Erreur",
         description: error.message || "Une erreur est survenue",
@@ -324,46 +341,19 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         </DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="p-8">
-            <h2 className="font-semibold text-2xl mb-6">
-              {task?.id ? "Modifier la tâche" : "Créer une nouvelle tâche"}
-            </h2>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-start">
-              {/* Titre */}
-              <div className="col-span-2">
-                <label
-                  htmlFor="title"
-                  className="text-sm font-medium text-gray-700 block mb-1"
-                >
-                  Titre de la tâche
-                </label>
-                <Input id="title" {...register("title", { required: true })} autoFocus />
-                {errors.title && (
-                  <div className="text-sm text-red-500 mt-1">Le titre est requis</div>
-                )}
-              </div>
-              {/* Description */}
-              <div className="col-span-2">
-                <label
-                  htmlFor="description"
-                  className="text-sm font-medium text-gray-700 block mb-1"
-                >
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  {...register("description")}
-                  rows={2}
-                  className="w-full rounded border border-gray-200 p-2"
-                />
-              </div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-semibold text-2xl">
+                {task?.id ? "Modifier la tâche" : "Créer une nouvelle tâche"}
+              </h2>
               {/* Statut */}
+
               <div>
-                <label
+                {/* <label
                   htmlFor="status"
                   className="text-sm font-medium text-gray-700 block mb-1"
                 >
                   Statut
-                </label>
+                </label> */}
                 <select
                   id="status"
                   className="w-full border border-gray-200 rounded px-3 py-2 bg-white text-base"
@@ -376,13 +366,50 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-start">
+              {/* Titre */}
+              <div className="col-span-2">
+                <label
+                  htmlFor="title"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
+                  Titre de la tâche
+                </label>
+                <Input
+                  id="title"
+                  {...register("title", { required: true })}
+                  autoFocus
+                />
+                {errors.title && (
+                  <div className="text-sm text-red-500 mt-1">
+                    Le titre est requis
+                  </div>
+                )}
+              </div>
+              {/* Description */}
+              <div className="col-span-2">
+                <label
+                  htmlFor="description"
+                  className="text-sm font-medium text-gray-700 block mb-1"
+                >
+                  Détails
+                </label>
+                <textarea
+                  id="description"
+                  {...register("description")}
+                  rows={2}
+                  className="w-full rounded border border-gray-200 p-2"
+                />
+              </div>
+
               {/* Assignés (multi dropdown) */}
               <div>
                 <label
                   htmlFor="assigned_to"
                   className="text-sm font-medium text-gray-700 block mb-1"
                 >
-                  Assignés
+                  Partager
                 </label>
                 <UsersDropdown />
               </div>
@@ -400,7 +427,11 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                         "w-full flex justify-between items-center px-3 py-2 bg-white border border-gray-200"
                       }
                     >
-                      {dueDate ? format(dueDate, "dd/MM/yyyy") : <span>Choisir une date</span>}
+                      {dueDate ? (
+                        format(dueDate, "dd/MM/yyyy")
+                      ) : (
+                        <span>Choisir une date</span>
+                      )}
                       <CalendarIcon className="ml-2 h-4 w-4 text-gray-400" />
                     </Button>
                   </PopoverTrigger>
@@ -483,7 +514,12 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
             </div>
             {/* Boutons */}
             <div className="flex justify-end gap-2 mt-8">
-              <Button type="button" variant="ghost" className="rounded-md px-6" onClick={onClose}>
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-md px-6"
+                onClick={onClose}
+              >
                 Annuler
               </Button>
               <Button

@@ -3,7 +3,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProjectCard } from "@/components/ProjectCard";
-import { TaskList } from "@/components/Tasks/TaskList";
+import { TaskListHome } from "@/components/Tasks/TaskListHome";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -107,7 +107,7 @@ export default function Home() {
                 {tasksLoading ? (
                   <div className="h-32 bg-muted animate-pulse rounded-lg" />
                 ) : userTasks?.length ? (
-                  <TaskList
+                  <TaskListHome
                     tasks={userTasks}
                     onEdit={() => {}}
                     refetch={refetch}
