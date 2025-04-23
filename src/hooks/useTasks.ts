@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +42,29 @@ export function useTasks() {
       throw usersError;
     }
 
+    // Récupérer les informations des projets associés aux tâches
+    const projectIds = new Set<string>();
+    tasks.forEach(task => {
+      if (task.project_id) projectIds.add(task.project_id);
+    });
+
+    let projectsMap = {};
+    if (projectIds.size > 0) {
+      const { data: projects, error: projectsError } = await supabase
+        .from("projects")
+        .select("id, title")
+        .in('id', Array.from(projectIds));
+
+      if (projectsError) {
+        console.error("Erreur lors de la récupération des projets:", projectsError);
+        throw projectsError;
+      }
+
+      projects.forEach(project => {
+        projectsMap[project.id] = project;
+      });
+    }
+
     // Attacher les informations des utilisateurs aux tâches
     const usersMap = {};
     users.forEach(user => {
@@ -52,7 +76,8 @@ export function useTasks() {
       creator: usersMap[task.user_id] || { prenom: "Inconnu", nom: "" },
       assignedUsers: task.assigned_to && Array.isArray(task.assigned_to) 
         ? task.assigned_to.map(id => usersMap[id] || { prenom: "Inconnu", nom: "" })
-        : []
+        : [],
+      project: task.project_id ? projectsMap[task.project_id] : null
     }));
     
     return enrichedTasks || [];

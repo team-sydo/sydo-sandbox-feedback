@@ -250,7 +250,7 @@ export type Database = {
           parent_id: string | null
           position: number
           priority: string
-          project_id: string
+          project_id: string | null
           remind_at: string | null
           status: string
           title: string
@@ -267,7 +267,7 @@ export type Database = {
           parent_id?: string | null
           position?: number
           priority: string
-          project_id: string
+          project_id?: string | null
           remind_at?: string | null
           status: string
           title: string
@@ -284,7 +284,7 @@ export type Database = {
           parent_id?: string | null
           position?: number
           priority?: string
-          project_id?: string
+          project_id?: string | null
           remind_at?: string | null
           status?: string
           title?: string

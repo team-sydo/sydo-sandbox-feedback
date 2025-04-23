@@ -91,7 +91,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
       assigned_to: [],
       parent_id: "",
       time: "",
-      project_id: "",
+      project_id: null,
     },
   });
 
@@ -112,9 +112,10 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         "time",
         task.remind_at ? format(new Date(task.remind_at), "HH:mm") : ""
       );
-      setValue("project_id", task.project_id || "");
+      setValue("project_id", task.project_id || null);
     } else {
       reset();
+      setValue("project_id", null);
     }
   }, [task, setValue, reset]);
 
@@ -295,7 +296,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
   function ProjectsDropdown() {
     const [open, setOpen] = useState(false);
     const projectId = watch("project_id");
-
+    
     return (
       <div className="relative">
         <ToggleDropdown open={open} setOpen={setOpen}>
@@ -347,7 +348,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         assigned_to: form.assigned_to,
         user_id: user.id,
         parent_id: cleanUUID(form.parent_id),
-        project_id: form.project_id || null,
+        project_id: form.project_id,
       };
 
       if (!input.parent_id) input.parent_id = null;
