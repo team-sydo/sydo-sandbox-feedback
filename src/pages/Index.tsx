@@ -26,7 +26,7 @@ const Index = () => {
             </div>
           ) : user ? (
             <Button asChild className="w-full">
-              <Link to="/dashboard">
+              <Link to="/home">
                 Accéder à mon dashboard
               </Link>
             </Button>
