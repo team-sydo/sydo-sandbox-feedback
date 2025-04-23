@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -293,11 +294,15 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
 
   function ProjectsDropdown() {
     const [open, setOpen] = useState(false);
+    const projectId = watch("project_id");
 
     return (
       <div className="relative">
         <ToggleDropdown open={open} setOpen={setOpen}>
-          {projects.find((p) => p.id === watch("project_id"))?.title || "Aucun projet"}
+          {projectId ? 
+            projects.find((p) => p.id === projectId)?.title || "Aucun projet" : 
+            "Aucun projet"
+          }
         </ToggleDropdown>
         {open && (
           <div className="absolute mt-1 left-0 z-50 w-full bg-white border border-gray-200 shadow-xl rounded py-2">
@@ -306,7 +311,8 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                 type="button"
                 className={cn(
                   "flex w-full items-center px-3 py-2 text-base hover:bg-blue-50",
-                  watch("project_id") === project.id && "bg-blue-100"
+                  (projectId === project.id || 
+                   (!projectId && project.id === null)) && "bg-blue-100"
                 )}
                 key={project.id ?? "no-project"}
                 onClick={() => {
@@ -314,7 +320,8 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   setOpen(false);
                 }}
               >
-                {watch("project_id") === project.id && (
+                {(projectId === project.id || 
+                  (!projectId && project.id === null)) && (
                   <Check className="mr-2 w-4 h-4 text-blue-500" />
                 )}
                 {project.title}
@@ -340,10 +347,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
         assigned_to: form.assigned_to,
         user_id: user.id,
         parent_id: cleanUUID(form.parent_id),
-        project_id:
-          form.project_id ||
-          projects[0]?.id ||
-          "00000000-0000-0000-0000-000000000000",
+        project_id: form.project_id || null,
       };
 
       if (!input.parent_id) input.parent_id = null;
