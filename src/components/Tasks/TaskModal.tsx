@@ -35,31 +35,32 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Pour dropdown utilisateurs (Assignés)
   const [users, setUsers] = useState([]);
   useEffect(() => {
-    // Va chercher les utilisateurs existants pour le dropdown "Assignés"
     const fetchUsers = async () => {
-      // only fetch if modal open
       let { data, error } = await supabase.from("users").select("*");
       if (!error) setUsers(data);
     };
     fetchUsers();
   }, []);
 
-  // Pour dropdown projets
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState([
+    { id: null, title: "Aucun projet" },
+  ]);
+
   useEffect(() => {
-    // Va chercher les projets existants de l'utilisateur connecté
     const fetchProjects = async () => {
       let { data, error } = await supabase.from("projects").select("id, title");
-      // .eq("user_id", user.id);
-      if (!error && Array.isArray(data)) setProjects(data);
+      if (!error && Array.isArray(data)) {
+        setProjects([
+          { id: null, title: "Aucun projet" },
+          ...data
+        ]);
+      }
     };
     if (user?.id) fetchProjects();
   }, [user?.id]);
 
-  // Pour dropdown tâches existantes
   const taskOptions = useMemo(
     () =>
       (allTasks || [])
@@ -93,7 +94,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
     },
   });
 
-  // Remplir sur édition
   useEffect(() => {
     if (task) {
       setValue("title", task.title || "");
@@ -133,12 +133,9 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
     return newDate;
   }
 
-  // Correction uuid "" -> null
   function cleanUUID(str) {
     return str && str.trim().length > 0 ? str.trim() : null;
   }
-
-  // --- Dropdown customisers ---
 
   function ToggleDropdown({ children, open, setOpen }) {
     return (
@@ -221,7 +218,6 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   )}
                   key={u.id}
                   onClick={() => {
-                    // toggle selection (multi)
                     if (assignedTo.includes(u.id)) {
                       setValue(
                         "assigned_to",
@@ -301,10 +297,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
     return (
       <div className="relative">
         <ToggleDropdown open={open} setOpen={setOpen}>
-          {projects.length
-            ? projects.find((p) => p.id === watch("project_id"))?.title ||
-              "Sélectionner"
-            : "Chargement..."}
+          {projects.find((p) => p.id === watch("project_id"))?.title || "Aucun projet"}
         </ToggleDropdown>
         {open && (
           <div className="absolute mt-1 left-0 z-50 w-full bg-white border border-gray-200 shadow-xl rounded py-2">
@@ -315,7 +308,7 @@ export function TaskModal({ task, onClose, refetch, allTasks }) {
                   "flex w-full items-center px-3 py-2 text-base hover:bg-blue-50",
                   watch("project_id") === project.id && "bg-blue-100"
                 )}
-                key={project.id}
+                key={project.id ?? "no-project"}
                 onClick={() => {
                   setValue("project_id", project.id);
                   setOpen(false);
