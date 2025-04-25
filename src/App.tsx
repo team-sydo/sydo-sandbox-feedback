@@ -8,6 +8,7 @@ import { Layout } from './components/Layout';
 import { 
   Auth, 
   Dashboard, 
+  ReturnsView,
   Home, 
   NotFound, 
   ProjectView, 
@@ -38,6 +39,7 @@ function App() {
               <Route element={<Layout />}>
                 <Route path="/home" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/returns" element={<ReturnsView />} />
                 <Route path="/tasks" element={<TasksPage />} />
               </Route>
             </Route>

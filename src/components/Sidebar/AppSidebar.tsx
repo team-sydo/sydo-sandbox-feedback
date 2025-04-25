@@ -28,9 +28,14 @@ const navigationItems = [
     path: "/home",
   },
   {
-    title: "Retours",
+    title: "Projets",
     icon: LayoutDashboard,
     path: "/dashboard",
+  },
+  {
+    title: "Retours",
+    icon: LayoutDashboard,
+    path: "/returns",
   },
   {
     title: "Todo",
