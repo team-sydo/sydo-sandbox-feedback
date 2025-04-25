@@ -1,15 +1,33 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Project } from "./types";
-import { ProjectsList } from "./components/ProjectsList";
-import { ProjectsTable } from "./components/ProjectsTable";
 import { useToast } from "@/hooks/use-toast";
-import { NewProjectDialog } from "./components/NewProjectDialog";
+import { useFavorites } from "@/hooks/useFavorites";
+import { ProjectsList } from "@/components/dashboard/ProjectsList";
+import { ProjectsTable } from "@/components/dashboard/ProjectsTable";
+import { NewProjectDialog } from "@/components/dashboard/NewProjectDialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFavorites } from "@/hooks/useFavorites";
+
+// Define Project interface
+export interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  client_name?: string | null;
+  client_id?: string | null;
+  clients?: {
+    id: string;
+    nom: string;
+  };
+  active: boolean;
+  created_at?: string;
+  user_id?: string;
+  sites?: number;
+  videos?: number;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -19,7 +37,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { favoriteProjectIds, toggleFavorite, isFavorite } = useFavorites();
+  const { favoriteProjectIds, toggleFavorite } = useFavorites();
 
   // Récupérer tous les projets au chargement
   useEffect(() => {

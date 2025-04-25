@@ -1,18 +1,20 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './hooks/useAuth';
 import { Toaster } from './components/ui/toaster';
 import { ProtectedRoute, PublicRoute } from './components/RouteGuard';
 import { Layout } from './components/Layout';
-import Auth from './pages/Auth';
-import Dashboard from './pages/Dashboard';
-import Home from './pages/Home';
-import NotFound from './pages/NotFound';
-import Index from './pages/Index';
-import ProjectView from './pages/ProjectView';
-import GrainView from './pages/GrainView';
-import CommentsList from './pages/CommentsList';
-import TasksPage from './pages/TasksPage';
+import { 
+  Auth, 
+  Dashboard, 
+  Home, 
+  NotFound, 
+  ProjectView, 
+  GrainView, 
+  CommentsList, 
+  TasksPage 
+} from './pages';
 
 const queryClient = new QueryClient();
 
@@ -24,7 +26,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route element={<PublicRoute />}>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/project/:projectId" element={<ProjectView />} />
               <Route path="/project/:projectId/comments" element={<CommentsList />} />
