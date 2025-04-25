@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "./types";
-// import { NavBar } from "@/components/NavBar";
 import { ProjectsList } from "./components/ProjectsList";
+import { ProjectsTable } from "./components/ProjectsTable";
 import { useToast } from "@/hooks/use-toast";
 import { NewProjectDialog } from "./components/NewProjectDialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Plus } from "lucide-react";
+import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'archived' | 'favorites'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
   const { toast } = useToast();
   const { favoriteProjectIds, toggleFavorite, isFavorite } = useFavorites();
@@ -146,36 +147,26 @@ export default function Dashboard() {
     return true;
   });
 
-  // Gérer la création d'un nouveau projet
-  const handleProjectCreated = () => {
-    setIsNewProjectDialogOpen(false);
-    // Recharger les projets
-    if (user) {
-      fetchProjects();
-    }
-  };
-
-  // Handle toggling favorites
-  const handleToggleFavorite = (projectId: string) => {
-    toggleFavorite(projectId);
-  };
-
-  // Get user name for NavBar
-  const userName = user ? `${user.user_metadata.prenom} ${user.user_metadata.nom}` : "";
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* <NavBar userName={userName} /> */}
       <main className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-8">
-          <div>
+          <div className="space-y-4">
             <h1 className="text-3xl font-bold">Retours</h1>
-            <div className="mt-4">
+            <div className="flex items-center gap-4">
               <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value as 'all' | 'active' | 'archived' | 'favorites')}>
                 <ToggleGroupItem value="all">Tous</ToggleGroupItem>
                 <ToggleGroupItem value="active">Actifs</ToggleGroupItem>
                 <ToggleGroupItem value="archived">Archivés</ToggleGroupItem>
                 <ToggleGroupItem value="favorites">Favoris</ToggleGroupItem>
+              </ToggleGroup>
+              <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list')}>
+                <ToggleGroupItem value="grid" aria-label="Vue grille">
+                  <LayoutGrid className="h-4 w-4" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="Vue liste">
+                  <List className="h-4 w-4" />
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           </div>
@@ -183,16 +174,27 @@ export default function Dashboard() {
             <Plus className="h-4 w-4 mr-2" /> Ajouter un projet
           </Button>
         </div>
-        <ProjectsList 
-          projects={filteredProjects} 
-          loading={loading} 
-          onDeleteProject={handleDeleteProject}
-          onToggleFavorite={handleToggleFavorite}
-          favoriteProjectIds={favoriteProjectIds}
-        />
+
+        {viewMode === 'grid' ? (
+          <ProjectsList
+            projects={filteredProjects}
+            loading={loading}
+            onDeleteProject={handleDeleteProject}
+            onToggleFavorite={handleToggleFavorite}
+            favoriteProjectIds={favoriteProjectIds}
+          />
+        ) : (
+          <ProjectsTable
+            projects={filteredProjects}
+            loading={loading}
+            onDeleteProject={handleDeleteProject}
+            onToggleFavorite={handleToggleFavorite}
+            favoriteProjectIds={favoriteProjectIds}
+          />
+        )}
       </main>
 
-      <NewProjectDialog 
+      <NewProjectDialog
         isOpen={isNewProjectDialogOpen}
         onOpenChange={setIsNewProjectDialogOpen}
         onProjectCreated={handleProjectCreated}
