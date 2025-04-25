@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ClientCombobox } from "@/components/ClientCombobox";
+import { ClientCombobox, ClientSelection } from "@/components/ClientCombobox";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +80,7 @@ export function NewProjectDialog({
         client_id: values.client_id || null,
         active: values.active,
         user_id: user.id,
+        created_by: user.id,  // Add the missing created_by field
       }).select();
 
       if (error) throw error;
@@ -151,8 +153,20 @@ export function NewProjectDialog({
                     <FormLabel>Client</FormLabel>
                     <FormControl>
                       <ClientCombobox
-                        value={field.value}
-                        onChange={field.onChange}
+                        value={field.value ? {
+                          type: "existing",
+                          value: field.value,
+                          label: field.value
+                        } : null}
+                        onChange={(selected) => {
+                          if (selected && selected.type === "existing") {
+                            field.onChange(selected.value);
+                          } else if (selected && selected.type === "new") {
+                            field.onChange(selected.value);
+                          } else {
+                            field.onChange(undefined);
+                          }
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
