@@ -32,3 +32,13 @@ export interface Grain {
   created_at?: string;
   updated_at?: string;
 }
+
+// Define Resource interface
+export interface Resource {
+  id: string;
+  title: string;
+  type: string;
+  url: string;
+  created_at: string;
+  project_id: string;
+}
