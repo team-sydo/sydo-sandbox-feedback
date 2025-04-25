@@ -17,7 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { GrainForm } from "@/components/GrainForm";
 import { GrainsList } from "@/components/GrainsList";
 import { GuestForm } from "@/components/GuestForm";
-import { Grain, Guest } from "@/types";
+import { Grain, Guest, Resource } from "@/types";
+import { ResourceForm } from "@/components/resources/ResourceForm";
+import { ResourcesList } from "@/components/resources/ResourcesList";
 
 interface Project {
   id: string;
@@ -40,6 +42,8 @@ export default function ProjectView() {
   const [loading, setLoading] = useState(true);
   const [guestCreated, setGuestCreated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [isResourceFormOpen, setIsResourceFormOpen] = useState(false);
 
   useEffect(() => {
     if (!user && !guestCreated) {
@@ -109,6 +113,32 @@ export default function ProjectView() {
     fetchProjectDetails();
   }, [projectId, toast]);
 
+  useEffect(() => {
+    const fetchResources = async () => {
+      if (!projectId) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("ressources")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setResources(data || []);
+      } catch (error: any) {
+        console.error("Error fetching resources:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les ressources",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchResources();
+  }, [projectId, toast]);
+
   const handleAddGrain = (newGrain: Grain) => {
     setGrains((prev) => [newGrain, ...prev]);
     setIsGrainFormOpen(false);
@@ -165,6 +195,22 @@ export default function ProjectView() {
       title: "Bienvenue !",
       description: `Merci de votre participation, ${guest.prenom}`,
     });
+  };
+
+  const handleResourceAdded = () => {
+    const fetchResources = async () => {
+      if (!projectId) return;
+      
+      const { data } = await supabase
+        .from("ressources")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+      
+      if (data) setResources(data);
+    };
+
+    fetchResources();
   };
 
   const userName = user
@@ -286,6 +332,24 @@ export default function ProjectView() {
             />
           </CardContent>
         </Card>
+
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Ressources</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              {user && (
+                <Button onClick={() => setIsResourceFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter une ressource
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResourcesList resources={resources} />
+          </CardContent>
+        </Card>
       </main>
 
       {isGrainFormOpen && (
@@ -301,6 +365,15 @@ export default function ProjectView() {
           projectId={projectId || ""}
           onClose={() => setIsGuestFormOpen(false)}
           onSubmit={handleGuestSubmit}
+        />
+      )}
+
+      {isResourceFormOpen && (
+        <ResourceForm
+          projectId={projectId || ""}
+          isOpen={isResourceFormOpen}
+          onClose={() => setIsResourceFormOpen(false)}
+          onResourceAdded={handleResourceAdded}
         />
       )}
     </div>

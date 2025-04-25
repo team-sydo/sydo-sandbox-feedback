@@ -239,6 +239,50 @@ export type Database = {
           },
         ]
       }
+      ressources: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_path: string | null
+          id: string
+          project_id: string
+          title: string
+          type: Database["public"]["Enums"]["resource_type"]
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_path?: string | null
+          id?: string
+          project_id: string
+          title: string
+          type: Database["public"]["Enums"]["resource_type"]
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_path?: string | null
+          id?: string
+          project_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["resource_type"]
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ressources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string[]
@@ -368,6 +412,14 @@ export type Database = {
       browser_type: "chrome" | "edge" | "firefox" | "safari" | "autre" | "arc"
       device_type: "mobile" | "ordinateur" | "tablette"
       grain_type: "web" | "video" | "figma" | "GSlide" | "pdf"
+      resource_type:
+        | "MM"
+        | "Figma"
+        | "budget"
+        | "Contenu texte"
+        | "Photoshop"
+        | "XD"
+        | "Autre"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -486,6 +538,15 @@ export const Constants = {
       browser_type: ["chrome", "edge", "firefox", "safari", "autre", "arc"],
       device_type: ["mobile", "ordinateur", "tablette"],
       grain_type: ["web", "video", "figma", "GSlide", "pdf"],
+      resource_type: [
+        "MM",
+        "Figma",
+        "budget",
+        "Contenu texte",
+        "Photoshop",
+        "XD",
+        "Autre",
+      ],
     },
   },
 } as const
