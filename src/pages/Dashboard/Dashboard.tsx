@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,6 +137,16 @@ export default function Dashboard() {
     }
   };
 
+  // Fonction pour gérer la création d'un projet
+  const handleProjectCreated = () => {
+    setIsNewProjectDialogOpen(false);
+    fetchProjects();
+    toast({
+      title: "Projet créé",
+      description: "Votre projet a été créé avec succès",
+    });
+  };
+
   // Filtrer les projets en fonction du filtre sélectionné
   const filteredProjects = projects.filter((project) => {
     if (filter === 'all') return true;
@@ -180,7 +189,7 @@ export default function Dashboard() {
             projects={filteredProjects}
             loading={loading}
             onDeleteProject={handleDeleteProject}
-            onToggleFavorite={handleToggleFavorite}
+            onToggleFavorite={toggleFavorite}
             favoriteProjectIds={favoriteProjectIds}
           />
         ) : (
@@ -188,7 +197,7 @@ export default function Dashboard() {
             projects={filteredProjects}
             loading={loading}
             onDeleteProject={handleDeleteProject}
-            onToggleFavorite={handleToggleFavorite}
+            onToggleFavorite={toggleFavorite}
             favoriteProjectIds={favoriteProjectIds}
           />
         )}
