@@ -177,6 +177,34 @@ export default function ProjectView() {
     }
   };
 
+  const handleRetourToggle = async (grainId: string, enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("grains")
+        .update({ retour_on: enabled })
+        .eq("id", grainId);
+
+      if (error) throw error;
+
+      setGrains((prev) =>
+        prev.map((grain) =>
+          grain.id === grainId ? { ...grain, retour_on: enabled } : grain
+        )
+      );
+
+      toast({
+        title: "État des retours mis à jour",
+        description: enabled ? "Les retours sont maintenant activés" : "Les retours sont maintenant désactivés",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de mettre à jour l'état des retours",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleGrainUpdate = (updatedGrain: Grain) => {
     setGrains((prev) =>
       prev.map((grain) => (grain.id === updatedGrain.id ? updatedGrain : grain))
@@ -329,6 +357,7 @@ export default function ProjectView() {
               isUserLoggedIn={!!user}
               onGrainUpdate={handleGrainUpdate}
               onGrainDelete={handleGrainDelete}
+              onRetourToggle={handleRetourToggle}
             />
           </CardContent>
         </Card>

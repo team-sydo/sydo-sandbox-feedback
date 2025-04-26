@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Define Project interface
 export interface Project {
   id: string;
   title: string;
@@ -39,7 +37,6 @@ export default function ReturnsView() {
   const { toast } = useToast();
   const { favoriteProjectIds, toggleFavorite } = useFavorites();
 
-  // Récupérer tous les projets au chargement
   useEffect(() => {
     fetchProjects();
   }, [user, toast]);
@@ -50,15 +47,15 @@ export default function ReturnsView() {
     try {
       setLoading(true);
       
-      console.log("Fetching all projects from dashboard...");
-      
-      // Requête pour récupérer tous les projets sans filtre sur user_id
+      // Fetch only projects that have at least one grain with retour_on = true
       const { data, error } = await supabase
         .from('projects')
         .select(`
           *,
-          clients (id, nom)
+          clients (id, nom),
+          grains!inner (id)
         `)
+        .eq('grains.retour_on', true)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -66,42 +63,34 @@ export default function ReturnsView() {
         throw error;
       }
 
-      console.log("Projects fetched:", data?.length || 0);
-      
-      // Ajouter manuellement le comptage des sites et vidéos
-      const projectsWithCounts: Project[] = [];
-      
-      for (const project of (data || [])) {
-        // Compter les grains de type 'web'
-        const { count: sitesCount, error: sitesError } = await supabase
-          .from('grains')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', project.id)
-          .eq('type', 'web');
-          
-        // Compter les grains de type 'video'
-        const { count: videosCount, error: videosError } = await supabase
-          .from('grains')
-          .select('id', { count: 'exact', head: true })
-          .eq('project_id', project.id)
-          .eq('type', 'video');
-          
-        if (sitesError) console.error("Error counting sites:", sitesError);
-        if (videosError) console.error("Error counting videos:", videosError);
-        
-        // Créer un nouvel objet avec toutes les propriétés typées correctement
-        const projectWithCounts: Project = {
-          ...project,
-          sites: sitesCount || 0,
-          videos: videosCount || 0,
-          client_name: project.clients ? project.clients.nom : null
-        };
-        
-        projectsWithCounts.push(projectWithCounts);
-      }
+      // Remove duplicates (due to multiple grains) and add counts
+      const uniqueProjects = Array.from(new Map(data.map(item => [item.id, item])).values());
+      const projectsWithCounts = await Promise.all(
+        uniqueProjects.map(async (project) => {
+          const { count: sitesCount } = await supabase
+            .from('grains')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', project.id)
+            .eq('type', 'web')
+            .eq('retour_on', true);
+            
+          const { count: videosCount } = await supabase
+            .from('grains')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', project.id)
+            .eq('type', 'video')
+            .eq('retour_on', true);
+            
+          return {
+            ...project,
+            sites: sitesCount || 0,
+            videos: videosCount || 0,
+            client_name: project.clients ? project.clients.nom : null
+          };
+        })
+      );
       
       setProjects(projectsWithCounts);
-      console.log("Projects with counts:", projectsWithCounts.length);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -113,7 +102,6 @@ export default function ReturnsView() {
     }
   };
 
-  // Fonction pour supprimer un projet
   const handleDeleteProject = async (projectId: string) => {
     if (!user) return;
     
@@ -155,7 +143,6 @@ export default function ReturnsView() {
     }
   };
 
-  // Fonction pour gérer la création d'un projet
   const handleProjectCreated = () => {
     setIsNewProjectDialogOpen(false);
     fetchProjects();
@@ -165,7 +152,6 @@ export default function ReturnsView() {
     });
   };
 
-  // Filtrer les projets en fonction du filtre sélectionné
   const filteredProjects = projects.filter((project) => {
     if (filter === 'all') return true;
     if (filter === 'active') return project.active;

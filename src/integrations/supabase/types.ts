@@ -108,6 +108,7 @@ export type Database = {
           done: boolean
           id: string
           project_id: string
+          retour_on: boolean
           title: string
           type: Database["public"]["Enums"]["grain_type"]
           updated_at: string
@@ -118,6 +119,7 @@ export type Database = {
           done?: boolean
           id?: string
           project_id: string
+          retour_on?: boolean
           title: string
           type: Database["public"]["Enums"]["grain_type"]
           updated_at?: string
@@ -128,6 +130,7 @@ export type Database = {
           done?: boolean
           id?: string
           project_id?: string
+          retour_on?: boolean
           title?: string
           type?: Database["public"]["Enums"]["grain_type"]
           updated_at?: string

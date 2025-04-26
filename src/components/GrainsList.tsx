@@ -1,9 +1,9 @@
-
 import { Eye, CheckCircle, ExternalLink, MessageSquare, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RetourToggle } from "@/components/grains/RetourToggle";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -29,19 +29,27 @@ interface GrainsListProps {
   isUserLoggedIn: boolean;
   onGrainUpdate?: (updatedGrain: Grain) => void;
   onGrainDelete?: (grainId: string) => void;
+  onRetourToggle?: (grainId: string, enabled: boolean) => void;
+  showRetourToggle?: boolean;
 }
 
 export function GrainsList({ 
-  grains, 
-  onStatusToggle, 
+  grains,
+  onStatusToggle,
   isUserLoggedIn,
   onGrainUpdate,
-  onGrainDelete
+  onGrainDelete,
+  onRetourToggle,
+  showRetourToggle = true,
 }: GrainsListProps) {
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentGrain, setCurrentGrain] = useState<Grain | null>(null);
   const { toast } = useToast();
+
+  // Group grains by retour_on status
+  const activeRetours = grains.filter(grain => grain.retour_on);
+  const inactiveRetours = grains.filter(grain => !grain.retour_on);
 
   if (grains.length === 0) {
     return (
@@ -101,14 +109,13 @@ export function GrainsList({
     }
   };
 
-  return (
+  const renderGrainsList = (grainsList: Grain[], title: string) => (
     <div className="space-y-4">
-      {grains.map((grain) => (
+      <h3 className="text-lg font-medium mb-4">{title}</h3>
+      {grainsList.map((grain) => (
         <ContextMenu key={grain.id}>
           <ContextMenuTrigger>
-            <div 
-              className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow"
-            >
+            <div className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -129,7 +136,17 @@ export function GrainsList({
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  {showRetourToggle && onRetourToggle && (
+                    <div className="flex items-center gap-2 mr-2">
+                      <span className="text-sm text-gray-500">Retours</span>
+                      <RetourToggle
+                        isEnabled={grain.retour_on}
+                        onToggle={(enabled) => onRetourToggle(grain.id, enabled)}
+                        disabled={!isUserLoggedIn}
+                      />
+                    </div>
+                  )}
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/project/${grain.project_id}/comments?grain=${grain.id}`}>
                       <MessageSquare className="h-4 w-4 mr-1" />
@@ -152,24 +169,20 @@ export function GrainsList({
                         <CheckCircle className="h-4 w-4 mr-1" />
                         {grain.done ? "Rouvrir" : "Terminer"}
                       </Button>
-                      {isUserLoggedIn && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleEdit(grain)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleDelete(grain)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEdit(grain)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleDelete(grain)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </>
                   )}
                 </div>
@@ -190,6 +203,13 @@ export function GrainsList({
           )}
         </ContextMenu>
       ))}
+    </div>
+  );
+
+  return (
+    <div className="space-y-8">
+      {renderGrainsList(activeRetours, "Éléments avec retours activés")}
+      {renderGrainsList(inactiveRetours, "Éléments avec retours désactivés")}
 
       {/* Edit Grain Form */}
       {currentGrain && isEditFormOpen && (
