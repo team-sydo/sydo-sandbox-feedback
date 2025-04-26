@@ -31,6 +31,7 @@ export interface Grain {
   };
   created_at?: string;
   updated_at?: string;
+  retour_on: boolean;  // Added the retour_on property
 }
 
 // Define Resource interface
