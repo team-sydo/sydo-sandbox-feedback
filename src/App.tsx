@@ -16,6 +16,8 @@ import {
   CommentsList, 
   TasksPage 
 } from './pages';
+import Index from './pages/Index';
+import { SidebarProvider } from './components/ui/sidebar';
 
 const queryClient = new QueryClient();
 
@@ -27,7 +29,12 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route element={<PublicRoute />}>
-              <Route path="/" element={<Home />} />
+              {/* Wrapping Index page with SidebarProvider */}
+              <Route path="/" element={
+                <SidebarProvider>
+                  <Index />
+                </SidebarProvider>
+              } />
               <Route path="/auth" element={<Auth />} />
               <Route path="/project/:projectId" element={<ProjectView />} />
               <Route path="/project/:projectId/comments" element={<CommentsList />} />
