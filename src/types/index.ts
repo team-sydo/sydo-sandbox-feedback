@@ -1,4 +1,6 @@
 
+import { Constants } from "@/integrations/supabase/types";
+
 // Define the Guest interface
 export interface Guest {
   id: string;
@@ -22,7 +24,7 @@ export interface Favorite {
 export interface Grain {
   id: string;
   title: string;
-  type: "web" | "video" | "figma" | "GSlide" | "pdf";
+  type: typeof Constants.public.Enums.grain_type[number];
   url: string;
   done: boolean;
   project_id: string;
@@ -31,7 +33,7 @@ export interface Grain {
   };
   created_at?: string;
   updated_at?: string;
-  retour_on: boolean;  // Added the retour_on property
+  retour_on: boolean;
 }
 
 // Define Resource interface

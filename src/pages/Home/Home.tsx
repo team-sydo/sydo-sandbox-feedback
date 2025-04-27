@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/hooks/useAuth";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useTasks } from "@/hooks/useTasks";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function Home() {
   const { user } = useAuth();
@@ -21,7 +23,7 @@ export default function Home() {
       if (!favoriteProjectIds.length) return [];
       const { data, error } = await supabase
         .from("projects")
-        .select("*")
+        .select("*, clients(nom)") // Inclure le nom du client
         .in("id", favoriteProjectIds);
 
       if (error) throw error;
@@ -31,10 +33,13 @@ export default function Home() {
   });
 
   const isLoading = favoritesLoading || projectsLoading || tasksLoading;
-  const userTasks = tasks.slice(0, 5); // Limiter à 5 tâches pour l'aperçu
+  const userTasks = tasks.slice(0, 5);
 
   return (
     <div className="container mx-auto py-8 px-4">
+      <div className="absolute left-4 top-4">
+        <SidebarTrigger />
+      </div>
       <div className="grid gap-8">
         {/* User Info Section */}
         <Card>
@@ -71,7 +76,7 @@ export default function Home() {
                         key={project.id}
                         id={project.id}
                         title={project.title}
-                        client={project.client_id || ""}
+                        client={project.clients?.nom || ""}
                         description={project.description || ""}
                         sites={0}
                         videos={0}
@@ -93,12 +98,6 @@ export default function Home() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Todo</CardTitle>
-                {/* <Button asChild variant="outline" size="sm">
-                  <Link to="/tasks">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Créer une tâche
-                  </Link>
-                </Button> */}
                 <Button asChild variant="outline" size="sm">
                   <Link to="/tasks">Voir toutes</Link>
                 </Button>

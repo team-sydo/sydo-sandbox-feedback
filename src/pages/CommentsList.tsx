@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { NavBar } from "@/components/NavBar";
 import { ArrowLeft } from "lucide-react";
@@ -11,25 +12,20 @@ import { CommentsTable } from "@/components/comments/CommentsTable";
 import { formatTimecode } from "@/utils/formatting";
 import { GuestForm } from "@/components/GuestForm";
 import { useToast } from "@/hooks/use-toast";
-
-interface Guest {
-  id: string;
-  prenom: string;
-  nom: string;
-  poste: string | null;
-  device: "mobile" | "ordinateur" | "tablette";
-  navigateur: "chrome" | "edge" | "firefox" | "safari" | "autre";
-  project_id: string;
-}
+import { Grain } from "@/types";
 
 export default function CommentsList() {
   const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const [guestCreated, setGuestCreated] = useState(false);
   const [guest, setGuest] = useState<Guest | null>(null);
   const [displayActions, setDisplayActions] = useState(true);
   const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
+  
+  // Récupérer le grain passé dans les paramètres de l'URL
+  const initialGrainFromUrl = searchParams.get("grain");
   const {
     loading,
     projectTitle,
@@ -47,17 +43,23 @@ export default function CommentsList() {
     deleteFeedback,
     fetchFeedbacks,
   } = useProjectComments(projectId);
+
+  // Effet pour sélectionner initialement le grain spécifié dans l'URL
+  useEffect(() => {
+    if (initialGrainFromUrl) {
+      setSelectedGrainId(initialGrainFromUrl);
+    }
+  }, [initialGrainFromUrl, setSelectedGrainId]);
+
   const userName = user
-  ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
-  : "";
+    ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
+    : "";
 
   useEffect(() => {
     if (!user && !guestCreated) {
       setIsGuestFormOpen(true);
       setDisplayActions(false);
     } else {
-      // If user is logged in, always show actions
-      // If guest, check if they are on their comments list
       setDisplayActions(!!user);
     }
   }, [user, guestCreated]);
@@ -72,16 +74,12 @@ export default function CommentsList() {
       description: `Merci de votre participation, ${guestData.prenom}`,
     });
     
-    // Set the author filter to the guest ID to show only their comments
     setSelectedAuthorId(guestData.id);
-    
-    // Now we know which guest it is, we can show actions for their own comments
     setDisplayActions(true);
   };
 
   const handleDeleteFeedback = async (feedbackId: string) => {
     try {
-      // For guests, we add extra check before attempting to delete
       if (!user && guest) {
         const feedbackToDelete = feedbacks.find(f => f.id === feedbackId);
         if (feedbackToDelete && feedbackToDelete.guest_id !== guest.id) {
@@ -102,7 +100,6 @@ export default function CommentsList() {
 
   const handleUpdateFeedback = async (feedbackId: string, content: string) => {
     try {
-      // For guests, we add extra check before attempting to update
       if (!user && guest) {
         const feedbackToUpdate = feedbacks.find(f => f.id === feedbackId);
         if (feedbackToUpdate && feedbackToUpdate.guest_id !== guest.id) {
@@ -120,7 +117,6 @@ export default function CommentsList() {
       console.error("Error updating feedback:", error);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -174,7 +170,6 @@ export default function CommentsList() {
         </div>
       </main>
 
-      {/* Modal pour l'inscription d'un invité */}
       {isGuestFormOpen && (
         <GuestForm
           projectId={projectId || ""}
