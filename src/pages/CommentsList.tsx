@@ -12,7 +12,7 @@ import { CommentsTable } from "@/components/comments/CommentsTable";
 import { formatTimecode } from "@/utils/formatting";
 import { GuestForm } from "@/components/GuestForm";
 import { useToast } from "@/hooks/use-toast";
-import { Grain, Guest } from "@/types";
+import { Guest } from "@/types";
 
 export default function CommentsList() {
   const { projectId } = useParams();
@@ -45,11 +45,19 @@ export default function CommentsList() {
   } = useProjectComments(projectId);
 
   // Effet pour sélectionner initialement le grain spécifié dans l'URL
+  // et rafraîchir les commentaires quand le grain change
   useEffect(() => {
     if (initialGrainFromUrl) {
       setSelectedGrainId(initialGrainFromUrl);
     }
   }, [initialGrainFromUrl, setSelectedGrainId]);
+
+  // Effet pour rafraîchir les commentaires quand selectedGrainId change
+  useEffect(() => {
+    if (selectedGrainId || selectedGrainId === null) {
+      fetchFeedbacks();
+    }
+  }, [selectedGrainId, fetchFeedbacks]);
 
   const userName = user
     ? `${user.user_metadata.prenom} ${user.user_metadata.nom}`
