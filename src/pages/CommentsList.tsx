@@ -12,7 +12,7 @@ import { CommentsTable } from "@/components/comments/CommentsTable";
 import { formatTimecode } from "@/utils/formatting";
 import { GuestForm } from "@/components/GuestForm";
 import { useToast } from "@/hooks/use-toast";
-import { Grain } from "@/types";
+import { Grain, Guest } from "@/types";
 
 export default function CommentsList() {
   const { projectId } = useParams();
